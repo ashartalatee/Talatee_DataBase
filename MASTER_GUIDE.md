@@ -178,8 +178,8 @@ masuk (misal habis onboarding klien baru), minimal seminggu sekali kalau sudah j
 1. Install prasyarat: Python 3.11+, Node.js, Docker Desktop, Git
 2. Clone kedua repo dari GitHub:
    ```
-   git clone <url-repo-talatee-data-platform>
-   git clone <url-repo-buku-kas-warung>
+   git clone https://github.com/ashartalatee/Talatee_DataBase.git talatee-data-platform
+   git clone https://github.com/ashartalatee/Buku_Kas_Warung.git buku-kas-warung
    ```
 3. **Talatee**: buat ulang `.env` (isi dari password manager yang dicatat tadi), lalu:
    ```
