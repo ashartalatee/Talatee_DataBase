@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.env
+.env.local
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Hasil backup.ps1 — ini DATA (dump Postgres + isi MinIO), bukan kode.
+# JANGAN PERNAH masuk git walau repo private (data transaksi klien asli).
+talatee-backup-*/

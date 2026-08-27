@@ -1,0 +1,73 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0a0d0a;
+  --color-ink-surface: #12160f;
+  --color-ink-elevated: #181f16;
+  --color-ink-border: #232b20;
+  --color-text-primary: #e8ede5;
+  --color-text-muted: #8a9484;
+
+  --color-accent: #7cfc3c;
+  --color-accent-soft: #a6ff6e;
+  --color-success: #7cfc3c;
+  --color-danger: #ff5c5c;
+  --color-info: #5bb8d4;
+
+  --font-display: "IBM Plex Mono", ui-monospace, monospace;
+  --font-body: "IBM Plex Sans", ui-sans-serif, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-ink);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-ink-border);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Glow dipakai SELEKTIF: hanya elemen interaktif utama (CTA, active nav, hover
+   pada elemen yang bisa diklik) — bukan semua card, supaya tidak melelahkan mata
+   untuk dashboard yang dibuka berulang setiap hari. */
+.glow-accent {
+  box-shadow:
+    0 0 0 1px rgba(124, 252, 60, 0.4),
+    0 0 16px 0 rgba(124, 252, 60, 0.35);
+}
+.glow-accent-sm {
+  box-shadow: 0 0 10px 0 rgba(124, 252, 60, 0.3);
+}
+.glow-text-accent {
+  text-shadow: 0 0 8px rgba(124, 252, 60, 0.5);
+}
