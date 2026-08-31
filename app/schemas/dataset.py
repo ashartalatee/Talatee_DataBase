@@ -30,6 +30,11 @@ class DatasetDetailOut(BaseModel):
     source_id: uuid.UUID
     name: str
     description: Optional[str] = None
+    # Nama business & source pemilik dataset ini — dipakai dashboard untuk
+    # upload batch baru dari halaman detail dataset tanpa perlu ketik ulang
+    # nama (menghindari typo yang bikin data kepecah jadi dataset berbeda).
+    business_name: str
+    source_name: str
     # Kolom DB bernama "schema", tapi attribute Python-nya "schema_" (kata
     # "schema" reserved di SQLAlchemy Declarative). serialization_alias supaya
     # JSON output tetap pakai key "schema", bukan "schema_".

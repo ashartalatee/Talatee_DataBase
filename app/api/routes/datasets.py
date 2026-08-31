@@ -5,7 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models import Batch, Dataset
+from app.models import Batch, Business, Dataset, Source
 from app.schemas.batch import BatchOut
 from app.schemas.dataset import DatasetDetailOut, DatasetListItemOut
 
@@ -49,6 +49,9 @@ def get_dataset(dataset_id: uuid.UUID, db: Session = Depends(get_db)):
     if dataset is None:
         raise HTTPException(status_code=404, detail="Dataset tidak ditemukan")
 
+    source = db.get(Source, dataset.source_id)
+    business = db.get(Business, source.business_id) if source else None
+
     batches = (
         db.query(Batch)
         .filter(Batch.dataset_id == dataset_id)
@@ -61,6 +64,8 @@ def get_dataset(dataset_id: uuid.UUID, db: Session = Depends(get_db)):
         source_id=dataset.source_id,
         name=dataset.name,
         description=dataset.description,
+        business_name=business.name if business else "",
+        source_name=source.name if source else "",
         schema_=dataset.schema_,
         created_at=dataset.created_at,
         updated_at=dataset.updated_at,

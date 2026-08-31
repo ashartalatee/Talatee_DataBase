@@ -15,6 +15,9 @@ async function request(path, options = {}) {
     }
     throw new Error(`${res.status}: ${detail}`)
   }
+  if (res.status === 204) {
+    return null
+  }
   return res.json()
 }
 
@@ -44,8 +47,26 @@ export const api = {
     formData.append('source_name', sourceName)
     formData.append('dataset_name', datasetName)
     formData.append('file', file)
-    return request('/ingest/upload', { method: 'POST', body: formData })
+    return request('/ingest/upload/dashboard', { method: 'POST', body: formData })
   },
 
   fileDownloadUrl: (id) => `${BASE_URL}/files/${id}/download`,
+
+  processDataset: (id) => request(`/datasets/${id}/process`, { method: 'POST' }),
+  getInsights: (id) => request(`/datasets/${id}/insights`),
+
+  listProjects: () => request('/projects'),
+  createProject: (payload) =>
+    request('/projects', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+  updateProject: (id, payload) =>
+    request(`/projects/${id}`, {
+      method: 'PATCH',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+  deleteProject: (id) => request(`/projects/${id}`, { method: 'DELETE' }),
 }

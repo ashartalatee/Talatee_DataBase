@@ -10,6 +10,14 @@ export function formatNumber(n) {
   return new Intl.NumberFormat('en-US').format(n ?? 0)
 }
 
+export function formatCurrency(n) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0,
+  }).format(n ?? 0)
+}
+
 export function formatDateTime(iso) {
   if (!iso) return '-'
   const d = new Date(iso)

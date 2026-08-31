@@ -20,10 +20,14 @@ if (-not (Test-Path $BackupFolder)) {
 }
 
 $dumpFile = Join-Path $BackupFolder "postgres_dump.sql"
-$minioDataFolder = Join-Path $BackupFolder "minio_data"
+$minioArchive = Join-Path $BackupFolder "minio_data.tar.gz"
 
 if (-not (Test-Path $dumpFile)) {
     Write-Host "File postgres_dump.sql tidak ditemukan di $BackupFolder" -ForegroundColor Red
+    exit 1
+}
+if (-not (Test-Path $minioArchive)) {
+    Write-Host "File minio_data.tar.gz tidak ditemukan di $BackupFolder" -ForegroundColor Red
     exit 1
 }
 
@@ -40,11 +44,11 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "  OK - data Postgres ter-restore." -ForegroundColor Green
 
-Write-Host "=== Restore MinIO ===" -ForegroundColor Cyan
+Write-Host "=== Restore MinIO (ekstrak tar.gz langsung ke volume Docker) ===" -ForegroundColor Cyan
 docker run --rm `
     -v talatee-database_minio_data:/dest `
-    -v "${minioDataFolder}:/source:ro" `
-    alpine sh -c "cp -r /source/. /dest/"
+    -v "${BackupFolder}:/source:ro" `
+    alpine sh -c "apk add --no-cache tar >/dev/null 2>&1; tar -xzf /source/minio_data.tar.gz -C /dest"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "GAGAL restore MinIO." -ForegroundColor Red

@@ -1,23 +1,51 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutGrid, Briefcase, Database, Boxes, ListOrdered, HardDrive, UploadCloud } from 'lucide-react'
+import {
+  LayoutGrid,
+  FolderKanban,
+  Users,
+  Activity,
+  Database,
+  Workflow,
+  BarChart3,
+  Bot,
+  ScrollText,
+  Plug,
+  FileText,
+  Settings,
+  UploadCloud,
+} from 'lucide-react'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Overview', icon: LayoutGrid, end: true },
-  { to: '/businesses', label: 'Businesses', icon: Briefcase },
-  { to: '/sources', label: 'Sources', icon: Database },
-  { to: '/datasets', label: 'Datasets', icon: Boxes },
-  { to: '/jobs', label: 'Jobs', icon: ListOrdered },
-  { to: '/storage', label: 'Storage', icon: HardDrive },
+  { to: '/proyek', label: 'Proyek', icon: FolderKanban },
+  { to: '/businesses', label: 'Clients', icon: Users },
+  { to: '/monitoring', label: 'Monitoring', icon: Activity },
+  { to: '/datasets', label: 'Databases', icon: Database },
+  { to: '/automations', label: 'Automations', icon: Workflow },
+  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { to: '/ai-analyst', label: 'AI Analyst', icon: Bot },
+  { to: '/jobs', label: 'Logs & Errors', icon: ScrollText },
+  { to: '/sources', label: 'Integrations', icon: Plug },
+  { to: '/reports', label: 'Reports', icon: FileText },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ]
+
+function navLinkClass({ isActive }) {
+  return `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+    isActive
+      ? 'glow-accent-sm bg-ink-elevated text-accent border border-accent/40'
+      : 'text-text-muted hover:text-text-primary hover:bg-ink-elevated/60'
+  }`
+}
 
 export default function Sidebar() {
   return (
-    <aside className="w-60 shrink-0 border-r border-ink-border bg-ink-surface flex flex-col">
+    <aside className="w-64 shrink-0 border-r border-ink-border bg-ink-surface flex flex-col">
       <div className="px-5 py-6 border-b border-ink-border">
         <div className="font-display text-accent text-sm tracking-widest uppercase">
           Talatee
         </div>
-        <div className="text-text-muted text-xs mt-1">Personal Data Vault</div>
+        <div className="text-text-muted text-xs mt-1">Control Center</div>
       </div>
 
       <div className="px-3 pt-4">
@@ -36,31 +64,25 @@ export default function Sidebar() {
         </NavLink>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                isActive
-                  ? 'glow-accent-sm bg-ink-elevated text-accent border border-accent/40'
-                  : 'text-text-muted hover:text-text-primary hover:bg-ink-elevated/60'
-              }`
-            }
-          >
+          <NavLink key={to} to={to} end={end} className={navLinkClass}>
             <Icon size={16} strokeWidth={1.75} />
             {label}
           </NavLink>
         ))}
       </nav>
 
-      <div className="px-5 py-4 border-t border-ink-border">
-        <div className="text-[11px] font-display text-text-muted leading-relaxed">
-          Raw data is never overwritten.
-          <br />
-          Every batch is a new ledger line.
+      <div className="px-4 py-4 border-t border-ink-border flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent text-xs font-display font-semibold shrink-0">
+          A
+        </div>
+        <div className="min-w-0">
+          <div className="text-text-primary text-sm truncate">Ashar</div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-success" />
+            <span className="text-text-muted text-xs">Owner</span>
+          </div>
         </div>
       </div>
     </aside>
