@@ -3,6 +3,7 @@ const BASE_URL = 'http://localhost:8000'
 async function request(path, options = {}) {
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: { Accept: 'application/json' },
+    credentials: 'include',
     ...options,
   })
   if (!res.ok) {
@@ -13,6 +14,14 @@ async function request(path, options = {}) {
     } catch {
       // response tidak berbentuk JSON, pakai statusText apa adanya
     }
+    if (
+      res.status === 401 &&
+      path !== '/auth/login' &&
+      path !== '/auth/me' &&
+      window.location.pathname !== '/login'
+    ) {
+      window.location.href = '/login'
+    }
     throw new Error(`${res.status}: ${detail}`)
   }
   if (res.status === 204) {
@@ -22,6 +31,15 @@ async function request(path, options = {}) {
 }
 
 export const api = {
+  login: (username, password) =>
+    request('/auth/login', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    }),
+  logout: () => request('/auth/logout', { method: 'POST' }),
+  me: () => request('/auth/me'),
+
   getOverview: () => request('/stats/overview'),
 
   listBusinessCategories: () => request('/businesses/categories'),
@@ -35,7 +53,6 @@ export const api = {
 
   listDatasets: () => request('/datasets'),
   getDataset: (id) => request(`/datasets/${id}`),
-
   listBatches: (datasetId) =>
     request(datasetId ? `/batches?dataset_id=${datasetId}` : '/batches'),
   getBatch: (id) => request(`/batches/${id}`),
@@ -54,6 +71,7 @@ export const api = {
 
   processDataset: (id) => request(`/datasets/${id}/process`, { method: 'POST' }),
   getInsights: (id) => request(`/datasets/${id}/insights`),
+  getDatasetQuality: (id) => request(`/datasets/${id}/quality`),
 
   listProjects: () => request('/projects'),
   createProject: (payload) =>
@@ -69,4 +87,22 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   deleteProject: (id) => request(`/projects/${id}`, { method: 'DELETE' }),
+  demoteProject: (id) => request(`/projects/${id}/demote`, { method: 'POST' }),
+
+  listLabEntries: () => request('/lab-entries'),
+  getLabEntry: (id) => request(`/lab-entries/${id}`),
+  createLabEntry: (payload) =>
+    request('/lab-entries', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+  updateLabEntry: (id, payload) =>
+    request(`/lab-entries/${id}`, {
+      method: 'PATCH',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+  deleteLabEntry: (id) => request(`/lab-entries/${id}`, { method: 'DELETE' }),
+  promoteLabEntry: (id) => request(`/lab-entries/${id}/promote`, { method: 'POST' }),
 }

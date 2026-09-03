@@ -3,6 +3,8 @@ import { Activity, Workflow, BarChart3, Bot, FileText, Settings } from 'lucide-r
 import Sidebar from './components/Sidebar'
 import ComingSoon from './components/ComingSoon'
 import Overview from './pages/Overview'
+import Laboratorium from './pages/Laboratorium'
+import LabEntryDetail from './pages/LabEntryDetail'
 import Proyek from './pages/Proyek'
 import Upload from './pages/Upload'
 import Businesses from './pages/Businesses'
@@ -24,6 +26,8 @@ export default function App() {
           <div className="max-w-6xl mx-auto">
             <Routes>
               <Route path="/" element={<Overview />} />
+              <Route path="/laboratorium" element={<Laboratorium />} />
+              <Route path="/laboratorium/:id" element={<LabEntryDetail />} />
               <Route path="/proyek" element={<Proyek />} />
               <Route path="/upload" element={<Upload />} />
               <Route path="/businesses" element={<Businesses />} />

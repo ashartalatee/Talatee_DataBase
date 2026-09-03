@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FlaskConical, FolderKanban, Rocket, Plus, Trash2, X, Check } from 'lucide-react'
+import { FlaskConical, FolderKanban, Rocket, Plus, Trash2, X, Check, Download } from 'lucide-react'
 import { api } from '../api/client'
 import { useFetch } from '../lib/useFetch'
 import { formatNumber } from '../lib/format'
@@ -23,10 +23,15 @@ export const TIERS = [
  * halaman /proyek benar-benar punya alasan sendiri untuk ada, bukan cuma
  * salinan Overview yang lebih besar.
  */
-export default function ProjectsBoard({ variant = 'compact' }) {
+export default function ProjectsBoard({ variant = 'compact', tierFilter = null }) {
   const { data: businesses } = useFetch(() => api.listBusinesses(), [])
   const { data: projects, loading, reload } = useFetch(() => api.listProjects(), [])
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showImportForm, setShowImportForm] = useState(false)
+
+  const linkedBusinessIds = new Set((projects || []).map((p) => p.business_id).filter(Boolean))
+  const unlinkedBusinesses = (businesses || []).filter((b) => !linkedBusinessIds.has(b.id))
+  const visibleTiers = tierFilter ? TIERS.filter((t) => t.key === tierFilter) : TIERS
 
   const projectsByTier = (tierKey) =>
     projects === null ? null : projects.filter((p) => p.tier === tierKey)
@@ -48,6 +53,18 @@ export default function ProjectsBoard({ variant = 'compact' }) {
     reload()
   }
 
+  async function handleDemoteProject(project) {
+    if (
+      !window.confirm(
+        `Kembalikan "${project.name}" ke Talatee Laboratorium (staging)? Ini akan menghapus statusnya sebagai Project resmi — bisa di-promosikan lagi nanti dari halaman Laboratorium.`
+      )
+    ) {
+      return
+    }
+    await api.demoteProject(project.id)
+    reload()
+  }
+
   async function handleToggleChecklistItem(project, itemIndex) {
     const newChecklist = project.checklist.map((item, i) =>
       i === itemIndex ? { ...item, done: !item.done } : item
@@ -61,9 +78,13 @@ export default function ProjectsBoard({ variant = 'compact' }) {
       <div className="flex items-center justify-between mb-3">
         {variant === 'full' ? (
           <div>
-            <h1 className="font-display text-xl text-text-primary">Proyek</h1>
+            <h1 className="font-display text-xl text-text-primary">
+              {tierFilter ? visibleTiers[0]?.title.replace(/^0\d — /, '') : 'Proyek'}
+            </h1>
             <p className="text-text-muted text-xs mt-1">
-              Registry proyek nyata — tambah, pindah tahap, dan centang checklist di sini.
+              {tierFilter
+                ? visibleTiers[0]?.subtitle + ' — tambah, update status, dan centang checklist di sini.'
+                : 'Registry proyek nyata — tambah, pindah tahap, dan centang checklist di sini.'}
             </p>
           </div>
         ) : (
@@ -78,9 +99,32 @@ export default function ProjectsBoard({ variant = 'compact' }) {
         </button>
       </div>
 
+      {unlinkedBusinesses.length > 0 && !showAddForm && (
+        <button
+          onClick={() => setShowImportForm((v) => !v)}
+          className="flex items-center gap-1.5 text-xs text-text-muted hover:text-accent mb-3 -mt-1"
+        >
+          {showImportForm ? <X size={12} /> : <Download size={12} />}
+          {showImportForm
+            ? 'Batal impor'
+            : `Impor dari Client (${unlinkedBusinesses.length} belum masuk registry)`}
+        </button>
+      )}
+
+      {showImportForm && (
+        <ImportClientsForm
+          businesses={unlinkedBusinesses}
+          onImported={() => {
+            setShowImportForm(false)
+            reload()
+          }}
+        />
+      )}
+
       {showAddForm && (
         <AddProjectForm
           businesses={businesses || []}
+          defaultTier={tierFilter || 'laboratorium'}
           onCreated={() => {
             setShowAddForm(false)
             reload()
@@ -88,8 +132,8 @@ export default function ProjectsBoard({ variant = 'compact' }) {
         />
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-3">
-        {TIERS.map((tier) => (
+      <div className={`grid grid-cols-1 gap-4 mt-3 ${tierFilter ? '' : 'lg:grid-cols-3'}`}>
+        {visibleTiers.map((tier) => (
           <ProyekTierCard
             key={tier.key}
             icon={tier.icon}
@@ -100,6 +144,7 @@ export default function ProjectsBoard({ variant = 'compact' }) {
             projects={loading ? null : projectsByTier(tier.key)}
             onTierChange={handleTierChange}
             onDelete={handleDeleteProject}
+            onDemote={variant === 'full' ? handleDemoteProject : null}
             onToggleChecklistItem={variant === 'full' ? handleToggleChecklistItem : null}
           />
         ))}
@@ -117,6 +162,7 @@ function ProyekTierCard({
   tierKey,
   onTierChange,
   onDelete,
+  onDemote,
   onToggleChecklistItem,
 }) {
   return (
@@ -208,6 +254,16 @@ function ProyekTierCard({
                     </option>
                   ))}
                 </select>
+
+                {onDemote && (
+                  <button
+                    onClick={() => onDemote(p)}
+                    className="mt-1.5 w-full flex items-center justify-center gap-1.5 text-[11px] text-text-muted hover:text-accent transition-colors py-1"
+                  >
+                    <FlaskConical size={11} />
+                    Kembalikan ke Laboratorium
+                  </button>
+                )}
               </li>
             )
           })}
@@ -217,9 +273,103 @@ function ProyekTierCard({
   )
 }
 
-function AddProjectForm({ businesses, onCreated }) {
-  const [name, setName] = useState('')
+function ImportClientsForm({ businesses, onImported }) {
+  const [selected, setSelected] = useState(() => new Set(businesses.map((b) => b.id)))
   const [tier, setTier] = useState('laboratorium')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState(null)
+
+  function toggle(id) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  async function handleImport() {
+    if (selected.size === 0) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      // Dibuat satu-satu (bukan bulk endpoint) — jumlahnya kecil dan ini
+      // dipakai jarang, jadi tidak perlu endpoint khusus di backend.
+      for (const b of businesses.filter((biz) => selected.has(biz.id))) {
+        await api.createProject({
+          name: b.name,
+          tier,
+          status_note: 'Diimpor dari data Client — status belum ditinjau',
+          business_id: b.id,
+        })
+      }
+      onImported()
+    } catch (err) {
+      setError(err.message || String(err))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="bg-ink-surface border border-ink-border rounded-lg px-5 py-4 mb-3 space-y-3">
+      <p className="text-text-muted text-xs">
+        Client ini punya data di Talatee tapi belum tercatat sebagai Project. Pilih mana yang
+        mau dimasukkan, dan ke tahap mana:
+      </p>
+
+      <ul className="space-y-1.5 max-h-56 overflow-y-auto">
+        {businesses.map((b) => (
+          <li key={b.id}>
+            <label className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md hover:bg-ink-elevated cursor-pointer">
+              <span
+                onClick={() => toggle(b.id)}
+                className={`w-3.5 h-3.5 rounded-sm border shrink-0 flex items-center justify-center transition-colors ${
+                  selected.has(b.id) ? 'bg-accent border-accent' : 'border-ink-border'
+                }`}
+              >
+                {selected.has(b.id) && <Check size={10} className="text-ink" strokeWidth={3} />}
+              </span>
+              <span className="text-text-primary text-xs flex-1">{b.name}</span>
+              <span className="text-text-muted text-[11px] font-display">
+                {formatNumber(b.total_records)} records
+              </span>
+            </label>
+          </li>
+        ))}
+      </ul>
+
+      <div className="flex items-center gap-2">
+        <label className="text-xs text-text-muted shrink-0">Masukkan ke tahap:</label>
+        <select
+          value={tier}
+          onChange={(e) => setTier(e.target.value)}
+          className="flex-1 bg-ink border border-ink-border rounded px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent/50"
+        >
+          {TIERS.map((t) => (
+            <option key={t.key} value={t.key}>
+              {t.title}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {error && <div className="text-danger text-xs">{error}</div>}
+
+      <button
+        onClick={handleImport}
+        disabled={submitting || selected.size === 0}
+        className="glow-accent-sm bg-accent text-ink font-medium text-sm rounded-md px-4 py-2 hover:bg-accent-soft transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {submitting ? 'Mengimpor…' : `Impor ${selected.size} Proyek`}
+      </button>
+    </div>
+  )
+}
+
+function AddProjectForm({ businesses, onCreated, defaultTier = 'laboratorium' }) {
+  const [name, setName] = useState('')
+  const [tier, setTier] = useState(defaultTier)
   const [statusNote, setStatusNote] = useState('')
   const [businessId, setBusinessId] = useState('')
   const [checklistText, setChecklistText] = useState('')

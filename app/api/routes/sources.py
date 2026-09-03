@@ -5,10 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.security.dashboard_session import require_dashboard_session
 from app.models import Source
 from app.schemas.source import SourceOut
 
-router = APIRouter(prefix="/sources", tags=["sources"])
+router = APIRouter(prefix="/sources", tags=["sources"], dependencies=[Depends(require_dashboard_session)])
 
 
 @router.get("", response_model=list[SourceOut])

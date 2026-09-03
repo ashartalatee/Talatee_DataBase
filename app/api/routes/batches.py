@@ -6,12 +6,13 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.security.dashboard_session import require_dashboard_session
 from app.models import Batch
 from app.models import File as FileModel
 from app.schemas.batch import BatchDetailOut, BatchOut, FileOut
 from app.storage.minio_client import get_file
 
-router = APIRouter(tags=["batches"])
+router = APIRouter(tags=["batches"], dependencies=[Depends(require_dashboard_session)])
 
 
 @router.get("/batches", response_model=list[BatchOut])

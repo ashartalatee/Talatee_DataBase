@@ -3,10 +3,11 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.security.dashboard_session import require_dashboard_session
 from app.models import Batch, Dataset, File as FileModel, Source
 from app.schemas.stats import OverviewStatsOut, RecentBatchItem, SourceBreakdownItem
 
-router = APIRouter(prefix="/stats", tags=["stats"])
+router = APIRouter(prefix="/stats", tags=["stats"], dependencies=[Depends(require_dashboard_session)])
 
 
 @router.get("/overview", response_model=OverviewStatsOut)

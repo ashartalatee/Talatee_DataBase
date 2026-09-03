@@ -5,12 +5,13 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.security.dashboard_session import require_dashboard_session
 from app.models import Batch, Business, Dataset, Source
 from app.models.business import BUSINESS_CATEGORIES
 from app.schemas.business import BusinessListItemOut, BusinessOut
 from app.schemas.source import SourceOut
 
-router = APIRouter(prefix="/businesses", tags=["businesses"])
+router = APIRouter(prefix="/businesses", tags=["businesses"], dependencies=[Depends(require_dashboard_session)])
 
 
 @router.get("/categories", response_model=list[str])

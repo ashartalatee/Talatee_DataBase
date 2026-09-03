@@ -8,6 +8,7 @@ from app.ingestion.engine import IngestionEngine
 from app.models.business import BUSINESS_CATEGORIES
 from app.schemas.batch import BatchOut
 from app.security.api_key import require_api_key
+from app.security.dashboard_session import require_dashboard_session
 
 router = APIRouter(prefix="/ingest", tags=["ingestion"])
 
@@ -89,12 +90,13 @@ async def ingest_upload_dashboard(
     file: UploadFile = FastAPIFile(...),
     business_category: str = Form("lainnya"),
     db: Session = Depends(get_db),
+    username: str = Depends(require_dashboard_session),
 ):
     """
-    Endpoint khusus dashboard Talatee sendiri (halaman Upload). TIDAK
-    dilindungi API key — dashboard cuma diakses dari localhost oleh
-    pemilik platform, beda trust boundary dengan endpoint publik di atas
-    yang dipanggil produk luar seperti Buku Kas Warung. Logic identik
-    dengan /ingest/upload, lihat _run_ingest().
+    Endpoint khusus dashboard Talatee sendiri (halaman Upload). TIDAK pakai
+    API key (beda trust boundary dari endpoint publik di atas), tapi TETAP
+    butuh sesi login dashboard yang valid — konsisten dengan semua endpoint
+    dashboard lain (datasets, core, projects, dst). Logic identik dengan
+    /ingest/upload, lihat _run_ingest().
     """
     return await _run_ingest(business_name, source_name, dataset_name, file, business_category, db)

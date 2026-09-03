@@ -7,6 +7,7 @@ from app.models.file import File
 from app.models.api_key import ApiKey
 from app.models.core_transaction import CoreTransaction
 from app.models.project import Project
+from app.models.lab_entry import LabEntry
 
 __all__ = [
     "Business",
@@ -18,4 +19,5 @@ __all__ = [
     "ApiKey",
     "CoreTransaction",
     "Project",
+    "LabEntry",
 ]

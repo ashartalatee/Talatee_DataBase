@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutGrid,
+  FlaskConical,
   FolderKanban,
   Users,
   Activity,
@@ -17,6 +18,7 @@ import {
 
 const NAV_ITEMS = [
   { to: '/', label: 'Overview', icon: LayoutGrid, end: true },
+  { to: '/laboratorium', label: 'Talatee Laboratorium', icon: FlaskConical },
   { to: '/proyek', label: 'Proyek', icon: FolderKanban },
   { to: '/businesses', label: 'Clients', icon: Users },
   { to: '/monitoring', label: 'Monitoring', icon: Activity },

@@ -14,7 +14,6 @@ import { api } from '../api/client'
 import { useFetch } from '../lib/useFetch'
 import StatCard from '../components/StatCard'
 import StatusBadge from '../components/StatusBadge'
-import EcosystemDiagram from '../components/EcosystemDiagram'
 import ProjectsBoard from '../components/ProjectsBoard'
 import { LoadingState, ErrorState } from '../components/States'
 import { formatBytes, formatNumber, formatRelative, colorForIndex } from '../lib/format'
@@ -55,8 +54,8 @@ export default function Overview() {
 
   return (
     <div className="space-y-8">
-      {/* Header brand + visi + ekosistem */}
-      <div className="bg-ink-surface border border-ink-border rounded-lg px-6 py-6 space-y-6">
+      {/* Header brand + visi */}
+      <div className="bg-ink-surface border border-ink-border rounded-lg px-6 py-6">
         <div className="max-w-2xl">
           <h1 className="font-display text-2xl text-text-primary">TALATEE</h1>
           <div className="text-accent text-xs font-display tracking-wide mt-1">
@@ -74,10 +73,6 @@ export default function Overview() {
               </li>
             ))}
           </ul>
-        </div>
-
-        <div className="pt-5 border-t border-ink-border">
-          <EcosystemDiagram />
         </div>
       </div>
 

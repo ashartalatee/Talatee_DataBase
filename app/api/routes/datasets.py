@@ -5,11 +5,12 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.security.dashboard_session import require_dashboard_session
 from app.models import Batch, Business, Dataset, Source
 from app.schemas.batch import BatchOut
 from app.schemas.dataset import DatasetDetailOut, DatasetListItemOut
 
-router = APIRouter(prefix="/datasets", tags=["datasets"])
+router = APIRouter(prefix="/datasets", tags=["datasets"], dependencies=[Depends(require_dashboard_session)])
 
 
 @router.get("", response_model=list[DatasetListItemOut])

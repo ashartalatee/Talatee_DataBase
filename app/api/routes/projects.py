@@ -5,10 +5,12 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models import Batch, Business, Dataset, Project, Source
+from app.security.dashboard_session import require_dashboard_session
+from app.models import Batch, Business, Dataset, LabEntry, Project, Source
+from app.schemas.lab_entry import LabEntryOut
 from app.schemas.project import ProjectCreate, ProjectOut, ProjectUpdate
 
-router = APIRouter(prefix="/projects", tags=["projects"])
+router = APIRouter(prefix="/projects", tags=["projects"], dependencies=[Depends(require_dashboard_session)])
 
 
 def _to_out(project: Project, db: Session) -> ProjectOut:
@@ -32,6 +34,12 @@ def _to_out(project: Project, db: Session) -> ProjectOut:
         if row:
             business_name, business_total_records = row
 
+    dataset_name = None
+    if project.dataset_id is not None:
+        dataset = db.get(Dataset, project.dataset_id)
+        if dataset:
+            dataset_name = dataset.name
+
     return ProjectOut(
         id=project.id,
         name=project.name,
@@ -44,6 +52,8 @@ def _to_out(project: Project, db: Session) -> ProjectOut:
         business_id=project.business_id,
         business_name=business_name,
         business_total_records=business_total_records,
+        dataset_id=project.dataset_id,
+        dataset_name=dataset_name,
         created_at=project.created_at,
         updated_at=project.updated_at,
     )
@@ -59,6 +69,8 @@ def list_projects(db: Session = Depends(get_db)):
 def create_project(payload: ProjectCreate, db: Session = Depends(get_db)):
     if payload.business_id is not None and db.get(Business, payload.business_id) is None:
         raise HTTPException(status_code=400, detail="business_id tidak ditemukan")
+    if payload.dataset_id is not None and db.get(Dataset, payload.dataset_id) is None:
+        raise HTTPException(status_code=400, detail="dataset_id tidak ditemukan")
 
     project = Project(
         name=payload.name,
@@ -69,6 +81,7 @@ def create_project(payload: ProjectCreate, db: Session = Depends(get_db)):
         repo_url=payload.repo_url,
         deploy_target=payload.deploy_target,
         business_id=payload.business_id,
+        dataset_id=payload.dataset_id,
     )
     db.add(project)
     db.commit()
@@ -88,6 +101,9 @@ def update_project(project_id: uuid.UUID, payload: ProjectUpdate, db: Session = 
     if "business_id" in data and data["business_id"] is not None:
         if db.get(Business, data["business_id"]) is None:
             raise HTTPException(status_code=400, detail="business_id tidak ditemukan")
+    if "dataset_id" in data and data["dataset_id"] is not None:
+        if db.get(Dataset, data["dataset_id"]) is None:
+            raise HTTPException(status_code=400, detail="dataset_id tidak ditemukan")
 
     for field, value in data.items():
         setattr(project, field, value)
@@ -104,3 +120,32 @@ def delete_project(project_id: uuid.UUID, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Project tidak ditemukan")
     db.delete(project)
     db.commit()
+
+
+@router.post("/{project_id}/demote", response_model=LabEntryOut, status_code=201)
+def demote_project(project_id: uuid.UUID, db: Session = Depends(get_db)):
+    """
+    Kebalikan dari POST /lab-entries/{id}/promote — kembalikan Project ini
+    jadi catatan staging mentah di Talatee Laboratorium, termasuk tautan
+    dataset-nya (kalau ada) supaya bisa dites ulang. Project-nya DIHAPUS
+    dari registry setelah ini (bukan disimpan dobel).
+    """
+    project = db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project tidak ditemukan")
+
+    entry = LabEntry(
+        name=project.name,
+        note=project.status_note,
+        checklist=project.checklist,
+        business_id=project.business_id,
+        dataset_id=project.dataset_id,
+    )
+    db.add(entry)
+    db.delete(project)
+    db.commit()
+    db.refresh(entry)
+
+    from app.api.routes.lab_entries import _to_out as lab_entry_to_out
+
+    return lab_entry_to_out(entry, db)

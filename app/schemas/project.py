@@ -27,6 +27,7 @@ class ProjectCreate(BaseModel):
     repo_url: Optional[str] = None
     deploy_target: Optional[str] = None
     business_id: Optional[uuid.UUID] = None
+    dataset_id: Optional[uuid.UUID] = None
 
     _validate_tier = field_validator("tier")(_validate_tier)
 
@@ -42,6 +43,7 @@ class ProjectUpdate(BaseModel):
     repo_url: Optional[str] = None
     deploy_target: Optional[str] = None
     business_id: Optional[uuid.UUID] = None
+    dataset_id: Optional[uuid.UUID] = None
 
     @field_validator("tier")
     @classmethod
@@ -68,5 +70,7 @@ class ProjectOut(BaseModel):
     # request terpisah.
     business_name: Optional[str] = None
     business_total_records: Optional[int] = None
+    dataset_id: Optional[uuid.UUID] = None
+    dataset_name: Optional[str] = None
     created_at: datetime
     updated_at: datetime

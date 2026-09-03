@@ -5,7 +5,7 @@ Entrypoint FastAPI. Jalankan dengan:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import batches, businesses, core, datasets, health, ingestion, projects, sources, stats
+from app.api.routes import auth, batches, businesses, core, datasets, health, ingestion, lab_entries, projects, sources, stats
 
 app = FastAPI(title="Talatee Personal Big Data Platform", version="0.1.0")
 
@@ -21,11 +21,13 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
+app.include_router(auth.router)
 app.include_router(ingestion.router)
 app.include_router(businesses.router)
 app.include_router(sources.router)
 app.include_router(datasets.router)
 app.include_router(core.router)
 app.include_router(projects.router)
+app.include_router(lab_entries.router)
 app.include_router(batches.router)
 app.include_router(stats.router)

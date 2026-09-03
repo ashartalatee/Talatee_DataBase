@@ -63,7 +63,10 @@ class UnrecognizedSchemaError(Exception):
 
 def process_dataset(db: Session, dataset_id) -> dict:
     """Proses ULANG semua batch berstatus 'success' milik satu dataset.
-    Return ringkasan hasil (jumlah baris per batch, error kalau ada).
+    Return ringkasan hasil: jumlah baris mentah, baris bersih yang tersimpan,
+    baris duplikat (order_id sama dalam 1 batch), baris invalid (tanggal
+    atau subtotal gagal di-parse) — dipakai langsung oleh step "Bersihkan
+    Data" & "Validasi" di pipeline testing Laboratorium, bukan angka karangan.
     """
     dataset = db.get(Dataset, dataset_id)
     if dataset is None:
@@ -75,13 +78,23 @@ def process_dataset(db: Session, dataset_id) -> dict:
         .all()
     )
 
-    summary = {"batches_processed": 0, "rows_written": 0, "batches_skipped": []}
+    summary = {
+        "batches_processed": 0,
+        "rows_total": 0,
+        "rows_written": 0,
+        "duplicate_count": 0,
+        "invalid_count": 0,
+        "batches_skipped": [],
+    }
 
     for batch in batches:
         try:
-            rows_written = _process_batch(db, batch)
+            stats = _process_batch(db, batch)
             summary["batches_processed"] += 1
-            summary["rows_written"] += rows_written
+            summary["rows_total"] += stats["rows_total"]
+            summary["rows_written"] += stats["rows_written"]
+            summary["duplicate_count"] += stats["duplicate_count"]
+            summary["invalid_count"] += stats["invalid_count"]
         except UnrecognizedSchemaError as exc:
             summary["batches_skipped"].append({"batch_id": str(batch.id), "reason": str(exc)})
 
@@ -89,7 +102,7 @@ def process_dataset(db: Session, dataset_id) -> dict:
     return summary
 
 
-def _process_batch(db: Session, batch: Batch) -> int:
+def _process_batch(db: Session, batch: Batch) -> dict:
     # Idempotent: buang dulu hasil proses lama untuk batch ini.
     db.query(CoreTransaction).filter(CoreTransaction.batch_id == batch.id).delete()
 
@@ -107,8 +120,9 @@ def _process_batch(db: Session, batch: Batch) -> int:
     else:
         raise UnrecognizedSchemaError(f"Ekstensi '{ext}' belum didukung processor ini.")
 
+    empty_stats = {"rows_total": 0, "rows_written": 0, "duplicate_count": 0, "invalid_count": 0}
     if not rows:
-        return 0
+        return empty_stats
 
     header = [str(h or "").strip().lower() for h in rows[0]]
     field_by_col_index = {
@@ -125,9 +139,16 @@ def _process_batch(db: Session, batch: Batch) -> int:
         )
 
     written = 0
+    rows_total = 0
+    duplicate_count = 0
+    invalid_count = 0
+    seen_order_ids: set[str] = set()
+
     for raw_row in rows[1:]:
         if not any(c not in (None, "") for c in raw_row):
-            continue  # baris kosong, lewati
+            continue  # baris kosong, lewati — tidak dihitung rows_total sama sekali
+
+        rows_total += 1
 
         values: dict = {}
         for i, cell in enumerate(raw_row):
@@ -136,25 +157,52 @@ def _process_batch(db: Session, batch: Batch) -> int:
                 continue
             values[field] = cell
 
+        order_id = _clean_str(values.get("order_id"))
+        if order_id is not None:
+            if order_id in seen_order_ids:
+                duplicate_count += 1
+            seen_order_ids.add(order_id)
+
+        transaction_date = _parse_date(values.get("transaction_date"))
+        subtotal = _parse_decimal(values.get("subtotal"))
+        # Invalid = kolom tanggal/subtotal ADA di file (termapping) tapi
+        # nilainya gagal di-parse — beda dari kolom yang memang tidak ada.
+        row_invalid = (
+            "transaction_date" in mapped_fields
+            and values.get("transaction_date") not in (None, "")
+            and transaction_date is None
+        ) or (
+            "subtotal" in mapped_fields
+            and values.get("subtotal") not in (None, "")
+            and subtotal is None
+        )
+        if row_invalid:
+            invalid_count += 1
+
         core_row = CoreTransaction(
             dataset_id=batch.dataset_id,
             batch_id=batch.id,
-            order_id=_clean_str(values.get("order_id")),
-            transaction_date=_parse_date(values.get("transaction_date")),
+            order_id=order_id,
+            transaction_date=transaction_date,
             transaction_time=_clean_str(values.get("transaction_time")),
             product_id=_clean_str(values.get("product_id")),
             product_name=_clean_str(values.get("product_name")),
             category=_clean_str(values.get("category")),
             qty=_parse_int(values.get("qty")),
             unit_price=_parse_decimal(values.get("unit_price")),
-            subtotal=_parse_decimal(values.get("subtotal")),
+            subtotal=subtotal,
             status_raw=_clean_str(values.get("status_raw")),
             is_revenue=_is_revenue_status(values.get("status_raw")),
         )
         db.add(core_row)
         written += 1
 
-    return written
+    return {
+        "rows_total": rows_total,
+        "rows_written": written,
+        "duplicate_count": duplicate_count,
+        "invalid_count": invalid_count,
+    }
 
 
 def _read_csv_rows(raw_bytes: bytes) -> list[list]:

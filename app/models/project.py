@@ -44,6 +44,12 @@ class Project(Base):
     business_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("businesses.id"), nullable=True
     )
+    # Dataset yang sudah ditest lewat pipeline Laboratorium sebelum
+    # dipromosikan — dibawa dari LabEntry.dataset_id saat promote, supaya
+    # jejak "data mana yang divalidasi" tidak hilang.
+    dataset_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("datasets.id"), nullable=True
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -53,3 +59,4 @@ class Project(Base):
     )
 
     business: Mapped["Business | None"] = relationship()
+    dataset: Mapped["Dataset | None"] = relationship()
