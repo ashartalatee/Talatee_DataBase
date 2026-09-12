@@ -24,6 +24,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.connectors.base import Connector
+from app.ingestion.channel_guard import check_channel_column
 from app.models import Business, Source, Connector as ConnectorModel, Dataset, Batch, File
 from app.storage import minio_client
 
@@ -72,6 +73,12 @@ class IngestionEngine:
                     "Data yang diterima dari connector kosong — kemungkinan file "
                     "korup atau tidak bisa di-parse."
                 )
+
+            # Kalau file punya kolom channel/platform, semua barisnya harus
+            # cocok dengan source_name tujuan -- lihat app/ingestion/
+            # channel_guard.py. Dipanggil SEBELUM upload ke MinIO supaya
+            # tidak ada file yang sempat tersimpan dulu baru ketahuan salah.
+            check_channel_column(result.raw_data, result.filename, source_name)
 
             checksum = hashlib.sha256(result.raw_data).hexdigest()
             storage_path = self._build_storage_path(

@@ -8,6 +8,9 @@ from app.models.api_key import ApiKey
 from app.models.core_transaction import CoreTransaction
 from app.models.project import Project
 from app.models.lab_entry import LabEntry
+from app.models.correction import Correction, CORRECTABLE_FIELDS
+from app.models.reconciliation import Reconciliation
+from app.models.deletion_log import DeletionLog
 
 __all__ = [
     "Business",
@@ -20,4 +23,8 @@ __all__ = [
     "CoreTransaction",
     "Project",
     "LabEntry",
+    "Correction",
+    "CORRECTABLE_FIELDS",
+    "Reconciliation",
+    "DeletionLog",
 ]

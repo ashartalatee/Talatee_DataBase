@@ -1,6 +1,17 @@
 import { useRef, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { UploadCloud, FileText, X, CheckCircle2, XCircle, Sparkles, TrendingUp, TrendingDown } from 'lucide-react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import {
+  UploadCloud,
+  FileText,
+  X,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Sparkles,
+  TrendingUp,
+  TrendingDown,
+  Trash2,
+} from 'lucide-react'
 import {
   ResponsiveContainer,
   BarChart,
@@ -20,25 +31,74 @@ const ACCEPTED_EXTENSIONS = ['.csv', '.xlsx']
 
 export default function DatasetDetail() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { data, loading, error, reload } = useFetch(() => api.getDataset(id), [id])
+  const [busy, setBusy] = useState(false)
+  const [actionError, setActionError] = useState(null)
 
   if (loading) return <LoadingState label="Memuat dataset" />
   if (error) return <ErrorState message={error} />
 
   const columns = data.schema?.columns || []
 
+  async function handleTrashDataset() {
+    setBusy(true)
+    setActionError(null)
+    try {
+      await api.trashDataset(id)
+      // Dataset yang di-trash langsung 404 di GET /datasets/{id} (sengaja,
+      // lihat app/services/trash.py), jadi pindah ke list, bukan reload().
+      // Untuk pulihkan / hapus permanen dataset ini, buka halaman Sampah.
+      navigate('/datasets')
+    } catch (err) {
+      setActionError(err.message || String(err))
+      setBusy(false)
+    }
+  }
+
+  async function handleTrashBatch(batchId) {
+    setBusy(true)
+    setActionError(null)
+    try {
+      await api.trashBatch(batchId)
+      await reload()
+    } catch (err) {
+      setActionError(err.message || String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <Link to="/datasets" className="text-xs text-text-muted hover:text-accent">
-          &larr; Datasets
-        </Link>
-        <h1 className="font-display text-xl text-text-primary mt-1">{data.name}</h1>
-        <p className="text-text-muted text-sm mt-1">
-          {data.description || 'Tidak ada deskripsi'} &middot; dibuat{' '}
-          {formatDateTime(data.created_at)}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <Link to="/datasets" className="text-xs text-text-muted hover:text-accent">
+            &larr; Datasets
+          </Link>
+          <h1 className="font-display text-xl text-text-primary mt-1">{data.name}</h1>
+          <p className="text-text-muted text-sm mt-1">
+            {data.description || 'Tidak ada deskripsi'} &middot; dibuat{' '}
+            {formatDateTime(data.created_at)}
+          </p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={handleTrashDataset}
+            disabled={busy}
+            className="flex items-center gap-1.5 text-xs text-text-muted hover:text-danger disabled:opacity-50"
+          >
+            <Trash2 size={13} strokeWidth={1.75} />
+            Pindah ke Sampah
+          </button>
+        </div>
       </div>
+
+      {actionError && (
+        <div className="text-danger text-xs bg-danger/10 border border-danger/30 rounded px-3 py-2">
+          {actionError}
+        </div>
+      )}
 
       <AddBatchCard
         businessName={data.business_name}
@@ -68,10 +128,13 @@ export default function DatasetDetail() {
       )}
 
       <div className="bg-ink-surface border border-ink-border rounded-lg">
-        <div className="px-5 py-4 border-b border-ink-border">
+        <div className="px-5 py-4 border-b border-ink-border flex items-center justify-between">
           <h2 className="text-sm font-medium text-text-primary">
             Riwayat Batch <span className="text-text-muted font-normal">({data.batches.length})</span>
           </h2>
+          <Link to="/trash" className="text-xs text-text-muted hover:text-accent">
+            Lihat Sampah
+          </Link>
         </div>
         {data.batches.length === 0 ? (
           <EmptyState label="Belum ada batch untuk dataset ini." />
@@ -90,11 +153,21 @@ export default function DatasetDetail() {
                     {formatDateTime(b.started_at)}
                   </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <StatusBadge status={b.status} />
-                  <div className="text-xs text-text-muted mt-0.5 font-display">
-                    {formatNumber(b.records_saved)} records
+                <div className="flex items-center gap-4 shrink-0">
+                  <div className="text-right">
+                    <StatusBadge status={b.status} />
+                    <div className="text-xs text-text-muted mt-0.5 font-display">
+                      {formatNumber(b.records_saved)} records
+                    </div>
                   </div>
+                  <button
+                    onClick={() => handleTrashBatch(b.id)}
+                    disabled={busy}
+                    title="Pindah batch ini ke Sampah"
+                    className="text-text-muted hover:text-danger disabled:opacity-50"
+                  >
+                    <Trash2 size={14} strokeWidth={1.75} />
+                  </button>
                 </div>
               </li>
             ))}
@@ -118,14 +191,25 @@ function AddBatchCard({ businessName, sourceName, datasetName, onUploaded }) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
+  const [showConfirm, setShowConfirm] = useState(false)
   const fileInputRef = useRef(null)
 
   const isValidExtension = (f) =>
     f && ACCEPTED_EXTENSIONS.some((ext) => f.name.toLowerCase().endsWith(ext))
 
+  // Pengingat ringan (bukan larangan keras) kalau nama file kelihatannya
+  // BUKAN untuk source ini -- misal file "lazada_2026-09-08.csv" ke-pilih
+  // padahal lagi di halaman dataset Shopee. Dicocokkan longgar (huruf/angka
+  // saja, tanpa spasi/underscore/tanda baca) supaya "TikTokShop",
+  // "tiktok_shop", "tiktok-shop.csv" semua kehitung cocok.
+  const normalize = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+  const looksMismatched =
+    file && sourceName && !normalize(file.name).includes(normalize(sourceName))
+
   function handleFileChosen(f) {
     setResult(null)
     setError(null)
+    setShowConfirm(false)
     if (!isValidExtension(f)) {
       setError(`File "${f.name}" bukan .csv atau .xlsx. Pilih file lain.`)
       setFile(null)
@@ -141,8 +225,16 @@ function AddBatchCard({ businessName, sourceName, datasetName, onUploaded }) {
     if (f) handleFileChosen(f)
   }
 
-  async function handleUpload() {
+  function handleUploadClick() {
     if (!file) return
+    // Klik pertama TIDAK langsung upload -- selalu munculkan panel
+    // konfirmasi dulu yang menyebutkan jelas channel/source tujuannya.
+    // Ini supaya "data dari mana" selalu diperiksa sadar, bukan cuma
+    // ditebak dari nama file (yang gampang salah ketik atau dimanipulasi).
+    setShowConfirm(true)
+  }
+
+  async function handleConfirmedUpload() {
     setUploading(true)
     setError(null)
     setResult(null)
@@ -152,10 +244,12 @@ function AddBatchCard({ businessName, sourceName, datasetName, onUploaded }) {
       const batch = await api.uploadFile(businessName, 'lainnya', sourceName, datasetName, file)
       setResult(batch)
       setFile(null)
+      setShowConfirm(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
       onUploaded?.()
     } catch (err) {
       setError(err.message || String(err))
+      setShowConfirm(false)
     } finally {
       setUploading(false)
     }
@@ -203,6 +297,50 @@ function AddBatchCard({ businessName, sourceName, datasetName, onUploaded }) {
           >
             Upload Lagi
           </button>
+        </div>
+      ) : showConfirm ? (
+        <div
+          className={`rounded-md px-4 py-4 space-y-3 border ${
+            looksMismatched ? 'bg-warning/10 border-warning/40' : 'bg-ink-elevated border-accent/40'
+          }`}
+        >
+          {looksMismatched && (
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={15} className="text-warning shrink-0 mt-0.5" strokeWidth={1.75} />
+              <span className="text-sm text-text-primary">
+                Nama file <span className="font-display text-xs">{file.name}</span> kelihatannya{' '}
+                <span className="text-warning">bukan</span> untuk {sourceName} — cek lagi sebelum
+                lanjut.
+              </span>
+            </div>
+          )}
+          <div className="text-sm text-text-primary">
+            Konfirmasi: file <span className="font-display text-xs">{file.name}</span> akan
+            tercatat sebagai data dari —
+          </div>
+          <div className="bg-ink border border-ink-border rounded px-3 py-2 text-sm">
+            <div className="text-text-muted text-[11px] uppercase tracking-wider">Channel / Source</div>
+            <div className="text-accent font-display text-base mt-0.5">{sourceName}</div>
+            <div className="text-text-muted text-xs mt-1">
+              {businessName} &rsaquo; {datasetName}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              onClick={() => setShowConfirm(false)}
+              disabled={uploading}
+              className="flex-1 text-sm text-text-muted hover:text-text-primary border border-ink-border rounded-md py-2 transition-colors disabled:opacity-50"
+            >
+              Batal, cek ulang
+            </button>
+            <button
+              onClick={handleConfirmedUpload}
+              disabled={uploading}
+              className="flex-1 text-sm font-medium rounded-md py-2 bg-accent text-ink hover:bg-accent-soft transition-colors disabled:opacity-50"
+            >
+              {uploading ? 'Mengirim ke ledger…' : `Ya, ini data ${sourceName}`}
+            </button>
+          </div>
         </div>
       ) : (
         <>
@@ -266,11 +404,11 @@ function AddBatchCard({ businessName, sourceName, datasetName, onUploaded }) {
           )}
 
           <button
-            onClick={handleUpload}
+            onClick={handleUploadClick}
             disabled={!file || uploading}
             className="glow-accent-sm w-full bg-accent text-ink font-medium text-sm rounded-md py-2 hover:bg-accent-soft transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           >
-            {uploading ? 'Mengirim ke ledger…' : 'Upload ke Dataset Ini'}
+            Upload ke Dataset Ini
           </button>
         </>
       )}

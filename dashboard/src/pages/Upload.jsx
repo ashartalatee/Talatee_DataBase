@@ -1,26 +1,54 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { UploadCloud, FileText, X, CheckCircle2, XCircle } from 'lucide-react'
+import { UploadCloud, FileText, X, CheckCircle2, XCircle, Layers } from 'lucide-react'
 import { api } from '../api/client'
 import { useFetch } from '../lib/useFetch'
 import StatusBadge from '../components/StatusBadge'
 import { formatNumber } from '../lib/format'
 
 const ACCEPTED_EXTENSIONS = ['.csv', '.xlsx']
+const NEW_BUSINESS = '__new__'
+const NEW_CHANNEL = '__new__'
+const MIXED_CHANNEL = '__mixed__'
 
 export default function Upload() {
   const { data: categories } = useFetch(() => api.listBusinessCategories(), [])
+  const { data: businesses, loading: businessesLoading } = useFetch(() => api.listBusinesses(), [])
 
-  const [businessName, setBusinessName] = useState('')
-  const [businessCategory, setBusinessCategory] = useState('lainnya')
-  const [sourceName, setSourceName] = useState('')
+  const [businessId, setBusinessId] = useState('')
+  const [newBusinessName, setNewBusinessName] = useState('')
+  const [newBusinessCategory, setNewBusinessCategory] = useState('lainnya')
+
+  const [sources, setSources] = useState([])
+  const [sourcesLoading, setSourcesLoading] = useState(false)
+  const [channelChoice, setChannelChoice] = useState('')
+  const [newChannelName, setNewChannelName] = useState('')
+
   const [datasetName, setDatasetName] = useState('')
   const [file, setFile] = useState(null)
   const [dragOver, setDragOver] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
-  const [result, setResult] = useState(null)
+  const [result, setResult] = useState(null) // single batch OR array of batches (mode campur)
   const fileInputRef = useRef(null)
+
+  // Begitu business (yang SUDAH ADA) dipilih, ambil daftar channel/source
+  // yang sudah pernah dipakai di business itu -- supaya user tinggal PILIH,
+  // tidak ngetik ulang nama yang gampang typo/beda kapitalisasi.
+  useEffect(() => {
+    setChannelChoice('')
+    setNewChannelName('')
+    if (!businessId || businessId === NEW_BUSINESS) {
+      setSources([])
+      return
+    }
+    setSourcesLoading(true)
+    api
+      .getBusinessSources(businessId)
+      .then((list) => setSources(list))
+      .catch(() => setSources([]))
+      .finally(() => setSourcesLoading(false))
+  }, [businessId])
 
   const isValidExtension = (f) =>
     f && ACCEPTED_EXTENSIONS.some((ext) => f.name.toLowerCase().endsWith(ext))
@@ -43,24 +71,46 @@ export default function Upload() {
     if (f) handleFileChosen(f)
   }
 
+  const resolvedBusinessName =
+    businessId === NEW_BUSINESS ? newBusinessName.trim() : businesses?.find((b) => b.id === businessId)?.name || ''
+  const resolvedBusinessCategory = businessId === NEW_BUSINESS ? newBusinessCategory : 'lainnya'
+  const resolvedChannelName = channelChoice === NEW_CHANNEL ? newChannelName.trim() : channelChoice
+  const isMixedMode = channelChoice === MIXED_CHANNEL
+
+  const canSubmit =
+    file &&
+    resolvedBusinessName &&
+    datasetName.trim() &&
+    (isMixedMode || resolvedChannelName)
+
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!file || !businessName.trim() || !sourceName.trim() || !datasetName.trim()) {
-      setError('Isi Business Name, Source Name, Dataset Name, dan pilih file terlebih dulu.')
+    if (!canSubmit) {
+      setError('Lengkapi Business, Channel, Dataset Name, dan pilih file terlebih dulu.')
       return
     }
     setUploading(true)
     setError(null)
     setResult(null)
     try {
-      const batch = await api.uploadFile(
-        businessName.trim(),
-        businessCategory,
-        sourceName.trim(),
-        datasetName.trim(),
-        file
-      )
-      setResult(batch)
+      if (isMixedMode) {
+        const batches = await api.uploadFileMixed(
+          resolvedBusinessName,
+          resolvedBusinessCategory,
+          datasetName.trim(),
+          file
+        )
+        setResult(batches)
+      } else {
+        const batch = await api.uploadFile(
+          resolvedBusinessName,
+          resolvedBusinessCategory,
+          resolvedChannelName,
+          datasetName.trim(),
+          file
+        )
+        setResult(batch)
+      }
       setFile(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (err) {
@@ -86,63 +136,118 @@ export default function Upload() {
       </div>
 
       {result ? (
-        <ResultCard batch={result} onUploadAnother={resetForm} />
+        Array.isArray(result) ? (
+          <MixedResultCard batches={result} onUploadAnother={resetForm} />
+        ) : (
+          <ResultCard batch={result} onUploadAnother={resetForm} />
+        )
       ) : (
         <form
           onSubmit={handleSubmit}
           className="bg-ink-surface border border-ink-border rounded-lg px-6 py-6 space-y-5"
         >
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2">
-              <label className="block text-xs text-text-muted uppercase tracking-wider mb-1.5">
-                Business Name
-              </label>
-              <input
-                type="text"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="misal: Resto Padang Jaya"
-                className="w-full bg-ink-elevated border border-ink-border rounded-md px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/60 focus:outline-none focus:border-accent"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-text-muted uppercase tracking-wider mb-1.5">
-                Category
-              </label>
-              <select
-                value={businessCategory}
-                onChange={(e) => setBusinessCategory(e.target.value)}
-                className="w-full bg-ink-elevated border border-ink-border rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent capitalize"
-              >
-                {(categories || ['lainnya']).map((c) => (
-                  <option key={c} value={c} className="capitalize">
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <p className="text-text-muted text-xs -mt-3">
-            Kalau belum pernah ada, business baru dibuat otomatis dengan kategori di atas. Kalau
-            sudah ada (nama sama persis), kategori yang sudah tersimpan tetap dipakai — pilihan
-            di atas diabaikan.
-          </p>
-
+          {/* Business — dropdown dari yang sudah ada, supaya tidak ada
+              typo/variasi kapitalisasi yang bikin business kepecah jadi 2. */}
           <div>
             <label className="block text-xs text-text-muted uppercase tracking-wider mb-1.5">
-              Source Name
+              Business
             </label>
-            <input
-              type="text"
-              value={sourceName}
-              onChange={(e) => setSourceName(e.target.value)}
-              placeholder="misal: POS Kasir"
-              className="w-full bg-ink-elevated border border-ink-border rounded-md px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/60 focus:outline-none focus:border-accent"
-            />
-            <p className="text-text-muted text-xs mt-1">
-              Kalau belum pernah ada, source baru akan dibuat otomatis.
-            </p>
+            <select
+              value={businessId}
+              onChange={(e) => setBusinessId(e.target.value)}
+              className="w-full bg-ink-elevated border border-ink-border rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent"
+            >
+              <option value="">{businessesLoading ? 'Memuat…' : '-- Pilih business --'}</option>
+              {(businesses || []).map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+              <option value={NEW_BUSINESS}>+ Business baru…</option>
+            </select>
           </div>
+
+          {businessId === NEW_BUSINESS && (
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2">
+                <label className="block text-xs text-text-muted uppercase tracking-wider mb-1.5">
+                  Nama Business Baru
+                </label>
+                <input
+                  type="text"
+                  value={newBusinessName}
+                  onChange={(e) => setNewBusinessName(e.target.value)}
+                  placeholder="misal: Resto Padang Jaya"
+                  className="w-full bg-ink-elevated border border-ink-border rounded-md px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/60 focus:outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-muted uppercase tracking-wider mb-1.5">
+                  Category
+                </label>
+                <select
+                  value={newBusinessCategory}
+                  onChange={(e) => setNewBusinessCategory(e.target.value)}
+                  className="w-full bg-ink-elevated border border-ink-border rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent capitalize"
+                >
+                  {(categories || ['lainnya']).map((c) => (
+                    <option key={c} value={c} className="capitalize">
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Channel data ini dari mana — dropdown dari channel yang sudah
+              ada di business ini, "+ Channel baru", atau mode campur. */}
+          {businessId && (
+            <div>
+              <label className="block text-xs text-text-muted uppercase tracking-wider mb-1.5">
+                Channel data ini dari mana? *
+              </label>
+              <select
+                value={channelChoice}
+                onChange={(e) => setChannelChoice(e.target.value)}
+                disabled={businessId !== NEW_BUSINESS && sourcesLoading}
+                className="w-full bg-ink-elevated border border-ink-border rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent"
+              >
+                <option value="">-- Pilih dulu --</option>
+                {sources.map((s) => (
+                  <option key={s.id} value={s.name}>
+                    {s.name}
+                  </option>
+                ))}
+                <option value={NEW_CHANNEL}>+ Channel baru…</option>
+                <option value={MIXED_CHANNEL}>File ini campur beberapa channel (pakai kolom "channel" di file)</option>
+              </select>
+
+              {channelChoice === NEW_CHANNEL && (
+                <input
+                  type="text"
+                  value={newChannelName}
+                  onChange={(e) => setNewChannelName(e.target.value)}
+                  placeholder="misal: Shopee"
+                  className="mt-2 w-full bg-ink-elevated border border-ink-border rounded-md px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/60 focus:outline-none focus:border-accent"
+                />
+              )}
+
+              {isMixedMode && (
+                <div className="mt-2 flex items-start gap-2 bg-accent/10 border border-accent/30 rounded-md px-3 py-2.5">
+                  <Layers size={15} className="text-accent shrink-0 mt-0.5" strokeWidth={1.75} />
+                  <span className="text-sm text-text-primary">
+                    File WAJIB punya kolom <span className="font-display text-xs">channel</span>{' '}
+                    (atau <span className="font-display text-xs">platform</span>/
+                    <span className="font-display text-xs">marketplace</span>/
+                    <span className="font-display text-xs">sumber</span>) berisi nama channel di
+                    setiap baris. Sistem otomatis memecah jadi beberapa batch, satu per channel
+                    yang ditemukan.
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-xs text-text-muted uppercase tracking-wider mb-1.5">
@@ -152,7 +257,7 @@ export default function Upload() {
               type="text"
               value={datasetName}
               onChange={(e) => setDatasetName(e.target.value)}
-              placeholder="misal: Orders"
+              placeholder="misal: Transaksi Harian"
               className="w-full bg-ink-elevated border border-ink-border rounded-md px-3 py-2 text-sm text-text-primary placeholder:text-text-muted/60 focus:outline-none focus:border-accent"
             />
           </div>
@@ -225,10 +330,14 @@ export default function Upload() {
 
           <button
             type="submit"
-            disabled={uploading}
+            disabled={uploading || !canSubmit}
             className="glow-accent-sm w-full bg-accent text-ink font-medium text-sm rounded-md py-2.5 hover:bg-accent-soft transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           >
-            {uploading ? 'Mengirim ke ledger…' : 'Upload & Ingest'}
+            {uploading
+              ? 'Mengirim ke ledger…'
+              : isMixedMode
+                ? 'Pisahkan & Upload per Channel'
+                : 'Upload & Ingest'}
           </button>
         </form>
       )}
@@ -289,6 +398,51 @@ function ResultCard({ batch, onUploadAnother }) {
           Upload Lagi
         </button>
       </div>
+    </div>
+  )
+}
+
+function MixedResultCard({ batches, onUploadAnother }) {
+  const successCount = batches.filter((b) => b.status === 'success').length
+  return (
+    <div className="bg-ink-surface border border-ink-border rounded-lg px-6 py-6 space-y-4">
+      <div className="flex items-center gap-3">
+        <Layers size={22} className="text-accent" strokeWidth={1.75} />
+        <div>
+          <div className="text-text-primary text-sm font-medium">
+            File terpecah jadi {batches.length} channel — {successCount} berhasil
+          </div>
+          <div className="text-text-muted text-xs mt-0.5">
+            Masing-masing channel jadi batch terpisah di source-nya sendiri.
+          </div>
+        </div>
+      </div>
+
+      <ul className="divide-y divide-ink-border border border-ink-border rounded-md overflow-hidden">
+        {batches.map((b) => (
+          <li key={b.id} className="px-4 py-3 flex items-center justify-between bg-ink-elevated">
+            <div className="min-w-0">
+              <div className="text-sm text-text-primary">{b.channel_name}</div>
+              <div className="text-text-muted text-xs mt-0.5 font-display truncate">
+                {formatNumber(b.records_saved)} records
+              </div>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <StatusBadge status={b.status} />
+              <Link to={`/jobs/${b.id}`} className="text-xs text-accent hover:underline">
+                Detail
+              </Link>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <button
+        onClick={onUploadAnother}
+        className="glow-accent-sm w-full bg-accent text-ink font-medium text-sm rounded-md py-2 hover:bg-accent-soft transition-colors"
+      >
+        Upload Lagi
+      </button>
     </div>
   )
 }

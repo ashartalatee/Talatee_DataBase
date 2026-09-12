@@ -14,6 +14,8 @@ import {
   FileText,
   Settings,
   UploadCloud,
+  Trash2,
+  X,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -28,6 +30,7 @@ const NAV_ITEMS = [
   { to: '/ai-analyst', label: 'AI Analyst', icon: Bot },
   { to: '/jobs', label: 'Logs & Errors', icon: ScrollText },
   { to: '/sources', label: 'Integrations', icon: Plug },
+  { to: '/trash', label: 'Sampah', icon: Trash2 },
   { to: '/reports', label: 'Reports', icon: FileText },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
@@ -40,53 +43,80 @@ function navLinkClass({ isActive }) {
   }`
 }
 
-export default function Sidebar() {
+// Sidebar HARUS selalu terlihat di desktop (md ke atas, statis di layout
+// flex seperti semula), tapi di layar sempit (HP) dia jadi drawer yang
+// nge-slide dari kiri, ditumpuk di atas backdrop gelap -- dikontrol lewat
+// prop `open`/`onClose` dari App.jsx. Tanpa ini, sidebar w-64 fixed akan
+// mendorong konten utama sampai overflow di layar sempit (persis bug yang
+// terlihat di screenshot HP).
+export default function Sidebar({ open, onClose }) {
   return (
-    <aside className="w-64 shrink-0 border-r border-ink-border bg-ink-surface flex flex-col">
-      <div className="px-5 py-6 border-b border-ink-border">
-        <div className="font-display text-accent text-sm tracking-widest uppercase">
-          Talatee
+    <>
+      {open && (
+        <div
+          className="fixed inset-0 bg-black/60 z-30 md:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-64 shrink-0 border-r border-ink-border bg-ink-surface flex flex-col
+          transform transition-transform duration-200 ease-out
+          md:static md:translate-x-0
+          ${open ? 'translate-x-0' : '-translate-x-full'}`}
+      >
+        <div className="px-5 py-6 border-b border-ink-border flex items-center justify-between">
+          <div>
+            <div className="font-display text-accent text-sm tracking-widest uppercase">
+              Talatee
+            </div>
+            <div className="text-text-muted text-xs mt-1">Control Center</div>
+          </div>
+          <button onClick={onClose} className="md:hidden text-text-muted hover:text-text-primary p-1">
+            <X size={18} />
+          </button>
         </div>
-        <div className="text-text-muted text-xs mt-1">Control Center</div>
-      </div>
 
-      <div className="px-3 pt-4">
-        <NavLink
-          to="/upload"
-          className={({ isActive }) =>
-            `glow-accent flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium transition-all ${
-              isActive
-                ? 'bg-accent-soft text-ink'
-                : 'bg-accent text-ink hover:bg-accent-soft'
-            }`
-          }
-        >
-          <UploadCloud size={16} strokeWidth={2} />
-          Upload Data
-        </NavLink>
-      </div>
-
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
-          <NavLink key={to} to={to} end={end} className={navLinkClass}>
-            <Icon size={16} strokeWidth={1.75} />
-            {label}
+        <div className="px-3 pt-4">
+          <NavLink
+            to="/upload"
+            onClick={onClose}
+            className={({ isActive }) =>
+              `glow-accent flex items-center justify-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium transition-all ${
+                isActive
+                  ? 'bg-accent-soft text-ink'
+                  : 'bg-accent text-ink hover:bg-accent-soft'
+              }`
+            }
+          >
+            <UploadCloud size={16} strokeWidth={2} />
+            Upload Data
           </NavLink>
-        ))}
-      </nav>
-
-      <div className="px-4 py-4 border-t border-ink-border flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent text-xs font-display font-semibold shrink-0">
-          A
         </div>
-        <div className="min-w-0">
-          <div className="text-text-primary text-sm truncate">Ashar</div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-success" />
-            <span className="text-text-muted text-xs">Owner</span>
+
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
+            <NavLink key={to} to={to} end={end} className={navLinkClass} onClick={onClose}>
+              <Icon size={16} strokeWidth={1.75} />
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="px-4 py-4 border-t border-ink-border flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center text-accent text-xs font-display font-semibold shrink-0">
+            A
+          </div>
+          <div className="min-w-0">
+            <div className="text-text-primary text-sm truncate">Ashar</div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-success" />
+              <span className="text-text-muted text-xs">Owner</span>
+            </div>
           </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   )
 }

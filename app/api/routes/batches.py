@@ -10,6 +10,8 @@ from app.security.dashboard_session import require_dashboard_session
 from app.models import Batch
 from app.models import File as FileModel
 from app.schemas.batch import BatchDetailOut, BatchOut, FileOut
+from app.schemas.trash import DeletionLogOut, PurgeRequest
+from app.services import trash as trash_service
 from app.storage.minio_client import get_file
 
 router = APIRouter(tags=["batches"], dependencies=[Depends(require_dashboard_session)])
@@ -20,7 +22,7 @@ def list_batches(
     dataset_id: Optional[uuid.UUID] = None,
     db: Session = Depends(get_db),
 ):
-    query = db.query(Batch)
+    query = trash_service.visible_batches_query(db)
     if dataset_id is not None:
         query = query.filter(Batch.dataset_id == dataset_id)
     return query.order_by(Batch.started_at.desc()).all()
@@ -37,6 +39,52 @@ def get_batch(batch_id: uuid.UUID, db: Session = Depends(get_db)):
         **BatchOut.model_validate(batch).model_dump(),
         files=[FileOut.model_validate(f) for f in files],
     )
+
+
+@router.post("/batches/{batch_id}/trash", response_model=BatchOut)
+def trash_batch(batch_id: uuid.UUID, db: Session = Depends(get_db), username: str = Depends(require_dashboard_session)):
+    """Pindahkan SATU batch (= satu kali upload) ke Sampah. Langsung hilang
+    dari dashboard/laporan/insight (dataset otomatis diproses ulang di
+    belakang layar), tapi file mentahnya di MinIO & barisnya di DB tetap
+    ada — bisa dipulihkan lewat /restore kapan saja."""
+    batch = db.get(Batch, batch_id)
+    if batch is None or batch.deleted_at is not None:
+        raise HTTPException(status_code=404, detail="Batch tidak ditemukan")
+    trash_service.trash_batch(db, batch, deleted_by=username)
+    return batch
+
+
+@router.post("/batches/{batch_id}/restore", response_model=BatchOut)
+def restore_batch(batch_id: uuid.UUID, db: Session = Depends(get_db)):
+    batch = db.get(Batch, batch_id)
+    if batch is None or batch.deleted_at is None:
+        raise HTTPException(status_code=404, detail="Batch tidak ada di Sampah")
+    trash_service.restore_batch(db, batch)
+    return batch
+
+
+@router.delete("/batches/{batch_id}/permanent", response_model=DeletionLogOut)
+def purge_batch(batch_id: uuid.UUID, body: PurgeRequest, db: Session = Depends(get_db), username: str = Depends(require_dashboard_session)):
+    """HAPUS PERMANEN satu batch — wajib isi `confirm_name` dengan nama file
+    aslinya (lihat GET /batches/{id} -> files[0].filename) supaya tidak
+    ke-klik tanpa sengaja. File di MinIO + baris DB + core_transactions
+    terkait ikut terhapus, tidak bisa dikembalikan lagi setelah ini."""
+    batch = db.get(Batch, batch_id)
+    if batch is None:
+        raise HTTPException(status_code=404, detail="Batch tidak ditemukan")
+    if batch.deleted_at is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Batch harus dipindahkan ke Sampah dulu sebelum bisa dihapus permanen.",
+        )
+    files = db.query(FileModel).filter(FileModel.batch_id == batch.id).all()
+    expected_names = {f.filename for f in files} | {f"Batch {batch.started_at:%Y-%m-%d %H:%M} ({batch.status})"}
+    if body.confirm_name not in expected_names:
+        raise HTTPException(
+            status_code=400,
+            detail="confirm_name tidak cocok dengan nama file batch ini — hapus permanen dibatalkan.",
+        )
+    return trash_service.purge_batch(db, batch, deleted_by=username, reason=body.reason)
 
 
 @router.get("/files/{file_id}/download")

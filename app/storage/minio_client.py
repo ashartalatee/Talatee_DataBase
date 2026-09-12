@@ -46,3 +46,13 @@ def get_file(storage_path: str) -> bytes:
     finally:
         response.close()
         response.release_conn()
+
+
+def delete_file(storage_path: str) -> None:
+    """Hapus PERMANEN satu object dari MinIO. Hanya boleh dipanggil dari
+    alur hard-delete (app/services/trash.py) — trash/soft-delete biasa TIDAK
+    boleh memanggil ini, karena raw file harus tetap ada supaya batch bisa
+    di-restore. remove_object idempotent di sisi MinIO (tidak error kalau
+    object sudah tidak ada), jadi aman dipanggil ulang kalau percobaan
+    sebelumnya gagal di tengah jalan."""
+    _client.remove_object(settings.minio_bucket, storage_path)

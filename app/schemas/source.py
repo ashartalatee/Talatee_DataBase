@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -13,3 +14,5 @@ class SourceOut(BaseModel):
     type: str
     status: str
     created_at: datetime
+    deleted_at: Optional[datetime] = None
+    deleted_by: Optional[str] = None

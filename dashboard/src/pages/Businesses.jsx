@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Store,
@@ -8,6 +9,7 @@ import {
   Shirt,
   Wrench,
   MoreHorizontal,
+  Trash2,
 } from 'lucide-react'
 import { api } from '../api/client'
 import { useFetch } from '../lib/useFetch'
@@ -26,10 +28,27 @@ const CATEGORY_META = {
 }
 
 export default function Businesses() {
-  const { data, loading, error } = useFetch(() => api.listBusinesses(), [])
+  const { data, loading, error, reload } = useFetch(() => api.listBusinesses(), [])
+  const [busyId, setBusyId] = useState(null)
+  const [actionError, setActionError] = useState(null)
 
   if (loading) return <LoadingState label="Memuat businesses" />
   if (error) return <ErrorState message={error} />
+
+  async function handleTrash(e, business) {
+    e.preventDefault()
+    e.stopPropagation()
+    setBusyId(business.id)
+    setActionError(null)
+    try {
+      await api.trashBusiness(business.id)
+      await reload()
+    } catch (err) {
+      setActionError(err.message || String(err))
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   const grouped = data.reduce((acc, b) => {
     ;(acc[b.category] ||= []).push(b)
@@ -56,6 +75,12 @@ export default function Businesses() {
         </p>
       </div>
 
+      {actionError && (
+        <div className="text-danger text-xs bg-danger/10 border border-danger/30 rounded px-3 py-2">
+          {actionError}
+        </div>
+      )}
+
       {data.length === 0 ? (
         <EmptyState label="Belum ada business. Upload data untuk membuat business pertama." />
       ) : (
@@ -75,9 +100,17 @@ export default function Businesses() {
                     <Link
                       key={b.id}
                       to={`/businesses/${b.id}`}
-                      className="bg-ink-surface border border-ink-border rounded-lg px-5 py-4 hover:border-accent/50 transition-colors"
+                      className="group relative bg-ink-surface border border-ink-border rounded-lg px-5 py-4 hover:border-accent/50 transition-colors"
                     >
-                      <div className="text-text-primary text-sm font-medium truncate">
+                      <button
+                        onClick={(e) => handleTrash(e, b)}
+                        disabled={busyId === b.id}
+                        title="Pindah ke Sampah"
+                        className="absolute top-3 right-3 text-text-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                      >
+                        <Trash2 size={13} strokeWidth={1.75} />
+                      </button>
+                      <div className="text-text-primary text-sm font-medium truncate pr-5">
                         {b.name}
                       </div>
                       <div className="flex items-center gap-4 mt-4 pt-3 border-t border-ink-border text-xs">

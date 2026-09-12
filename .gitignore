@@ -10,3 +10,5 @@ venv/
 # Hasil backup.ps1 — ini DATA (dump Postgres + isi MinIO), bukan kode.
 # JANGAN PERNAH masuk git walau repo private (data transaksi klien asli).
 talatee-backup-*/
+
+.vite/

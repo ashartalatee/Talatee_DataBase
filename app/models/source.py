@@ -28,6 +28,17 @@ class Source(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+    # Trash (hapus sesaat). NULL = tidak dihapus. Diisi saat "Pindah ke
+    # Sampah" lewat POST /sources/{id}/trash, dikosongkan lagi kalau
+    # di-restore. Anak (datasets/batches) TIDAK ikut ditulis deleted_at-nya
+    # saat parent di-trash — visibilitas dicek berantai lewat
+    # app/services/trash.py (is_source_visible dkk), supaya restore parent
+    # tanpa sengaja "menghidupkan" anak yang memang sengaja dihapus sendiri
+    # tidak terjadi, dan restore anak independen tetap butuh parent-nya juga
+    # tidak ter-trash. Baris ini TIDAK PERNAH benar-benar hilang dari DB
+    # sampai ada aksi permanent-delete eksplisit (lihat deletion_log).
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_by: Mapped[str | None] = mapped_column(String, nullable=True)
 
     business: Mapped["Business"] = relationship(back_populates="sources")
     connectors: Mapped[list["Connector"]] = relationship(

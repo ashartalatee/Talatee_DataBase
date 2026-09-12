@@ -32,6 +32,12 @@ class Batch(Base):
     records_saved: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     records_failed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Trash (hapus sesaat) — lihat catatan lengkap di Source.deleted_at.
+    # Batch adalah unit "satu kali upload" (1 batch = 1 file, lihat
+    # IngestionEngine), jadi ini unit paling umum dipakai untuk kasus
+    # "salah upload file".
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_by: Mapped[str | None] = mapped_column(String, nullable=True)
 
     dataset: Mapped["Dataset"] = relationship(back_populates="batches")
     connector: Mapped["Connector"] = relationship(back_populates="batches")

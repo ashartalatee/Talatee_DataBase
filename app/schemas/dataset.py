@@ -19,6 +19,9 @@ class DatasetListItemOut(BaseModel):
     updated_at: datetime
     total_records: int
     total_batches: int
+    trust_status: str
+    deleted_at: Optional[datetime] = None
+    deleted_by: Optional[str] = None
 
 
 class DatasetDetailOut(BaseModel):
@@ -39,6 +42,9 @@ class DatasetDetailOut(BaseModel):
     # "schema" reserved di SQLAlchemy Declarative). serialization_alias supaya
     # JSON output tetap pakai key "schema", bukan "schema_".
     schema_: Optional[dict] = Field(default=None, serialization_alias="schema")
+    trust_status: str
     created_at: datetime
     updated_at: datetime
+    deleted_at: Optional[datetime] = None
+    deleted_by: Optional[str] = None
     batches: list[BatchOut] = []

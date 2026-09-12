@@ -18,7 +18,7 @@ SESSION_MAX_AGE = 60 * 60 * 12  # 12 jam
 # Set ke False lagi kalau mau aktifkan login sungguhan (wajib True
 # sebelum deploy ke mana pun yang bukan localhost).
 # ------------------------------------------------------------------
-DISABLE_LOGIN_FOR_LOCAL_DEV = True
+DISABLE_LOGIN_FOR_LOCAL_DEV = False
 
 
 def _serializer() -> URLSafeTimedSerializer:

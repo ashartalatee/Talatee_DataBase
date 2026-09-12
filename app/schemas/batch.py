@@ -29,9 +29,19 @@ class BatchOut(BaseModel):
     records_saved: int
     records_failed: int
     error_message: Optional[str] = None
+    deleted_at: Optional[datetime] = None
+    deleted_by: Optional[str] = None
 
 
 class BatchDetailOut(BatchOut):
     """Detail satu batch + daftar file-nya — dipakai GET /batches/{id}."""
 
     files: list[FileOut] = []
+
+
+class MixedIngestResultItem(BatchOut):
+    """Satu baris hasil upload mode 'campur channel' -- BatchOut biasa +
+    nama channel yang jadi alasan batch ini kebuat, supaya frontend bisa
+    nunjukin 'Shopee: 20 records' bukan cuma 'Channel #1'."""
+
+    channel_name: str

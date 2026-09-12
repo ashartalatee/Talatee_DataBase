@@ -1,29 +1,107 @@
-import { useParams, Link } from 'react-router-dom'
-import { Download, FileText } from 'lucide-react'
+import { useState } from 'react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { Download, FileText, Trash2, RotateCcw } from 'lucide-react'
 import { api } from '../api/client'
 import { useFetch } from '../lib/useFetch'
 import { LoadingState, ErrorState, EmptyState } from '../components/States'
 import StatusBadge from '../components/StatusBadge'
+import ConfirmPurgeModal from '../components/ConfirmPurgeModal'
 import { formatDateTime, formatBytes } from '../lib/format'
 
 export default function JobDetail() {
   const { id } = useParams()
-  const { data, loading, error } = useFetch(() => api.getBatch(id), [id])
+  const navigate = useNavigate()
+  const { data, loading, error, reload } = useFetch(() => api.getBatch(id), [id])
+  const [busy, setBusy] = useState(false)
+  const [actionError, setActionError] = useState(null)
+  const [showPurge, setShowPurge] = useState(false)
 
   if (loading) return <LoadingState label="Memuat job" />
   if (error) return <ErrorState message={error} />
 
+  async function handleTrash() {
+    setBusy(true)
+    setActionError(null)
+    try {
+      await api.trashBatch(id)
+      await reload()
+    } catch (err) {
+      setActionError(err.message || String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleRestore() {
+    setBusy(true)
+    setActionError(null)
+    try {
+      await api.restoreBatch(id)
+      await reload()
+    } catch (err) {
+      setActionError(err.message || String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handlePurgeConfirm(reason) {
+    const confirmName = data.files[0]?.filename || `Batch ${new Date(data.started_at).toISOString()}`
+    await api.purgeBatch(id, confirmName, reason)
+    navigate('/jobs')
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <Link to="/jobs" className="text-xs text-text-muted hover:text-accent">
-          &larr; Jobs
-        </Link>
-        <h1 className="font-display text-lg text-text-primary mt-1 break-all">{data.id}</h1>
-        <div className="mt-2">
-          <StatusBadge status={data.status} />
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <Link to="/jobs" className="text-xs text-text-muted hover:text-accent">
+            &larr; Jobs
+          </Link>
+          <h1 className="font-display text-lg text-text-primary mt-1 break-all">{data.id}</h1>
+          <div className="mt-2 flex items-center gap-3">
+            <StatusBadge status={data.status} />
+            {data.deleted_at && (
+              <span className="text-xs text-danger">Di Sampah sejak {formatDateTime(data.deleted_at)}</span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          {data.deleted_at ? (
+            <button
+              onClick={handleRestore}
+              disabled={busy}
+              className="flex items-center gap-1.5 text-xs text-accent hover:underline disabled:opacity-50"
+            >
+              <RotateCcw size={13} strokeWidth={1.75} />
+              Pulihkan
+            </button>
+          ) : (
+            <button
+              onClick={handleTrash}
+              disabled={busy}
+              className="flex items-center gap-1.5 text-xs text-text-muted hover:text-danger disabled:opacity-50"
+            >
+              <Trash2 size={13} strokeWidth={1.75} />
+              Pindah ke Sampah
+            </button>
+          )}
+          {data.deleted_at && (
+            <button
+              onClick={() => setShowPurge(true)}
+              className="flex items-center gap-1.5 text-xs text-danger hover:underline"
+            >
+              Hapus Permanen
+            </button>
+          )}
         </div>
       </div>
+
+      {actionError && (
+        <div className="text-danger text-xs bg-danger/10 border border-danger/30 rounded px-3 py-2">
+          {actionError}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <InfoCell label="Started" value={formatDateTime(data.started_at)} mono />
@@ -77,6 +155,15 @@ export default function JobDetail() {
           </ul>
         )}
       </div>
+
+      {showPurge && (
+        <ConfirmPurgeModal
+          entityLabel="Batch"
+          entityName={data.files[0]?.filename || `Batch ${new Date(data.started_at).toISOString()}`}
+          onConfirm={handlePurgeConfirm}
+          onClose={() => setShowPurge(false)}
+        />
+      )}
     </div>
   )
 }

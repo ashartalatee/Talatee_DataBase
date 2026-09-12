@@ -5,6 +5,7 @@ class SourceBreakdownItem(BaseModel):
     source_id: str
     source_name: str
     total_records: int
+    total_revenue: float
 
 
 class RecentBatchItem(BaseModel):
@@ -19,6 +20,7 @@ class RecentBatchItem(BaseModel):
 
 class OverviewStatsOut(BaseModel):
     total_records: int
+    total_revenue: float
     total_datasets: int
     total_sources: int
     total_batches: int

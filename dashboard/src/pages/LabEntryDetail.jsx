@@ -17,6 +17,11 @@ import {
   ChevronDown,
   SquareArrowOutUpRight,
   ArrowUpCircle,
+  ShieldAlert,
+  ShieldQuestion,
+  ScrollText,
+  Scale,
+  X,
 } from 'lucide-react'
 import {
   ResponsiveContainer,
@@ -62,6 +67,8 @@ export default function LabEntryDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { data: entry, loading, error } = useFetch(() => api.getLabEntry(id), [id])
+  const [trustRefreshKey, setTrustRefreshKey] = useState(0)
+  const bumpTrust = () => setTrustRefreshKey((k) => k + 1)
 
   if (loading) return <LoadingState label="Memuat entri" />
   if (error) return <ErrorState message={error} />
@@ -96,6 +103,8 @@ export default function LabEntryDetail() {
 
       <LabHero entry={entry} />
 
+      <DatasetTrustBadge datasetId={entry.dataset_id} refreshKey={trustRefreshKey} />
+
       <div className="flex items-center justify-between px-0.5">
         <h2 className="font-display text-xs tracking-wider text-text-muted uppercase">
           Pipeline Laboratorium
@@ -109,7 +118,7 @@ export default function LabEntryDetail() {
       <div>
         <StepAmbilData datasetId={entry.dataset_id} isLast={false} />
         <StepBersihkan datasetId={entry.dataset_id} isLast={false} />
-        <StepValidasi datasetId={entry.dataset_id} isLast={false} />
+        <StepValidasi datasetId={entry.dataset_id} isLast={false} onTrustChanged={bumpTrust} />
         <StepAnalisis datasetId={entry.dataset_id} isLast={false} />
         <StepComingSoon
           number={5}
@@ -131,6 +140,8 @@ export default function LabEntryDetail() {
           isLast
         />
       </div>
+
+      <DataTrustPanel datasetId={entry.dataset_id} />
 
       <button
         onClick={handlePromote}
@@ -178,6 +189,64 @@ function LabHero({ entry }) {
             <span className="text-warning">Siap Digunakan</span>.
           </p>
         </div>
+      </div>
+    </div>
+  )
+}
+
+/* ---------- Trust status badge — ringkasan Data Trust Spec section 7/12:
+   status ini TERPISAH dari "step berhasil/belum", dan TRUSTED cuma bisa
+   dicapai lewat promote eksplisit di Step 3, tidak pernah otomatis. ---------- */
+
+const TRUST_META = {
+  INGESTED: {
+    label: 'INGESTED',
+    desc: 'Data masuk, belum divalidasi',
+    cls: 'text-text-muted border-ink-border',
+    icon: ShieldQuestion,
+  },
+  VALIDATING: {
+    label: 'VALIDATING',
+    desc: 'Lolos quality check, belum di-promote',
+    cls: 'text-warning border-warning/40',
+    icon: ShieldAlert,
+  },
+  NEEDS_REVIEW: {
+    label: 'NEEDS REVIEW',
+    desc: 'Ada error — perlu ditinjau sebelum dipercaya',
+    cls: 'text-danger border-danger/40',
+    icon: ShieldAlert,
+  },
+  TRUSTED: {
+    label: 'TRUSTED',
+    desc: 'Sudah di-promote, aman untuk Analisis',
+    cls: 'text-success border-success/40',
+    icon: ShieldCheck,
+  },
+}
+
+function TrustPill({ status }) {
+  const cfg = TRUST_META[status] || TRUST_META.INGESTED
+  const Icon = cfg.icon
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide border rounded-full px-2 py-0.5 shrink-0 ${cfg.cls}`}
+    >
+      <Icon size={10} /> {cfg.label}
+    </span>
+  )
+}
+
+function DatasetTrustBadge({ datasetId, refreshKey }) {
+  const { data } = useFetch(() => api.getDataset(datasetId), [datasetId, refreshKey])
+  if (!data) return null
+  const cfg = TRUST_META[data.trust_status] || TRUST_META.INGESTED
+  return (
+    <div className="bg-ink-surface border border-ink-border rounded-xl px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+      <span className="text-text-muted text-[11px]">Status kepercayaan data saat ini</span>
+      <div className="flex items-center gap-2">
+        <TrustPill status={data.trust_status} />
+        <span className="text-text-muted text-[11px]">{cfg.desc}</span>
       </div>
     </div>
   )
@@ -442,21 +511,69 @@ function StepBersihkan({ datasetId, isLast }) {
 
 /* ---------- Step 3: Validasi (real — GET /datasets/{id}/quality) ---------- */
 
-function StepValidasi({ datasetId, isLast }) {
+function StepValidasi({ datasetId, isLast, onTrustChanged }) {
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [promoting, setPromoting] = useState(false)
+  const [promoteError, setPromoteError] = useState(null)
+  const [correctingOrderId, setCorrectingOrderId] = useState(null)
+  const [correctionValue, setCorrectionValue] = useState('')
+  const [correctionReason, setCorrectionReason] = useState('')
+  const [correctionSaving, setCorrectionSaving] = useState(false)
+  const [correctionMsg, setCorrectionMsg] = useState(null)
 
   async function run() {
     setLoading(true)
     setError(null)
+    setPromoteError(null)
     try {
       const res = await api.getDatasetQuality(datasetId)
       setResult(res)
+      onTrustChanged?.()
     } catch (err) {
       setError(err.message || String(err))
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function promote() {
+    setPromoting(true)
+    setPromoteError(null)
+    try {
+      const res = await api.promoteDataset(datasetId)
+      setResult((prev) => (prev ? { ...prev, trust_status: res.trust_status } : prev))
+      onTrustChanged?.()
+    } catch (err) {
+      setPromoteError(err.message || String(err))
+    } finally {
+      setPromoting(false)
+    }
+  }
+
+  async function submitCorrection(orderId) {
+    if (!correctionValue.trim() || !correctionReason.trim()) return
+    setCorrectionSaving(true)
+    setCorrectionMsg(null)
+    try {
+      await api.createCorrection(datasetId, {
+        order_id: orderId,
+        field_name: 'subtotal',
+        corrected_value: correctionValue.trim(),
+        reason: correctionReason.trim(),
+      })
+      setCorrectionMsg({
+        type: 'success',
+        text: 'Correction tersimpan. Jalankan ulang Bersihkan Data (Step 2) supaya nilai barunya dipakai.',
+      })
+      setCorrectingOrderId(null)
+      setCorrectionValue('')
+      setCorrectionReason('')
+    } catch (err) {
+      setCorrectionMsg({ type: 'error', text: err.message || String(err) })
+    } finally {
+      setCorrectionSaving(false)
     }
   }
 
@@ -483,6 +600,40 @@ function StepValidasi({ datasetId, isLast }) {
           <StatusLine
             state={loading ? 'loading' : hasErrors ? 'error' : result?.processed ? 'success' : 'idle'}
           />
+
+          {result?.processed && (
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
+              <TrustPill status={result.trust_status} />
+
+              {result.trust_status === 'VALIDATING' && (
+                <button
+                  onClick={promote}
+                  disabled={promoting}
+                  className="flex items-center gap-1 text-[11px] font-semibold text-ink bg-success rounded-md px-2.5 py-1 hover:brightness-110 disabled:opacity-50 transition"
+                >
+                  {promoting ? (
+                    <Loader2 size={11} className="animate-spin" />
+                  ) : (
+                    <ShieldCheck size={11} />
+                  )}
+                  {promoting ? 'Mempromosikan…' : 'Promote ke TRUSTED'}
+                </button>
+              )}
+
+              {result.trust_status === 'NEEDS_REVIEW' && (
+                <span className="text-[11px] text-warning">
+                  Perbaiki error di bawah dulu sebelum bisa di-promote.
+                </span>
+              )}
+
+              {result.trust_status === 'TRUSTED' && (
+                <span className="text-[11px] text-success">
+                  Data ini boleh dipakai di step Analisis.
+                </span>
+              )}
+            </div>
+          )}
+          {promoteError && <div className="text-danger text-[11px] mt-1">{promoteError}</div>}
         </>
       }
       metrics={
@@ -512,18 +663,98 @@ function StepValidasi({ datasetId, isLast }) {
       detail={
         result?.processed &&
         (hasWarnings || hasErrors) && (
-          <ul className="text-xs bg-ink-elevated border border-ink-border rounded-md px-3 py-2 space-y-1">
-            {result.errors.map((m, i) => (
-              <li key={`e${i}`} className="text-danger">
-                &bull; {m}
-              </li>
-            ))}
-            {result.warnings.map((m, i) => (
-              <li key={`w${i}`} className="text-warning">
-                &bull; {m}
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-2">
+            <ul className="text-xs bg-ink-elevated border border-ink-border rounded-md px-3 py-2 space-y-1">
+              {result.errors.map((m, i) => (
+                <li key={`e${i}`} className="text-danger">
+                  &bull; {m}
+                </li>
+              ))}
+              {result.warnings.map((m, i) => (
+                <li key={`w${i}`} className="text-warning">
+                  &bull; {m}
+                </li>
+              ))}
+            </ul>
+
+            {result.subtotal_mismatch_examples?.length > 0 && (
+              <div className="text-xs bg-ink-elevated border border-danger/30 rounded-md px-3 py-2">
+                <div className="text-text-muted mb-1">
+                  Contoh baris subtotal tidak cocok (qty &times; harga_satuan &ne; subtotal):
+                </div>
+                <ul className="space-y-1.5">
+                  {result.subtotal_mismatch_examples.map((ex, i) => (
+                    <li key={i}>
+                      <div className="flex items-center justify-between gap-2 font-mono text-[11px] text-danger">
+                        <span>
+                          {ex.order_id ? `${ex.order_id}: ` : ''}
+                          {ex.qty} &times; {ex.unit_price} = {ex.expected_subtotal} (tertulis: {ex.subtotal})
+                        </span>
+                        {ex.order_id && (
+                          <button
+                            onClick={() => {
+                              setCorrectingOrderId(ex.order_id)
+                              setCorrectionValue(ex.expected_subtotal)
+                              setCorrectionMsg(null)
+                            }}
+                            className="shrink-0 text-[10px] font-sans font-semibold text-accent border border-accent/40 rounded px-2 py-0.5 hover:bg-accent/10 transition"
+                          >
+                            Perbaiki
+                          </button>
+                        )}
+                      </div>
+
+                      {correctingOrderId === ex.order_id && (
+                        <div className="mt-1.5 bg-ink-surface border border-ink-border rounded-md p-2 space-y-1.5">
+                          <label className="block text-[10px] text-text-muted font-sans">
+                            Nilai subtotal yang benar
+                            <input
+                              type="text"
+                              value={correctionValue}
+                              onChange={(e) => setCorrectionValue(e.target.value)}
+                              className="mt-0.5 w-full bg-ink-elevated border border-ink-border rounded px-2 py-1 text-xs text-text-primary font-mono"
+                            />
+                          </label>
+                          <label className="block text-[10px] text-text-muted font-sans">
+                            Alasan koreksi
+                            <input
+                              type="text"
+                              value={correctionReason}
+                              onChange={(e) => setCorrectionReason(e.target.value)}
+                              placeholder="mis. Harga salah input di sumber"
+                              className="mt-0.5 w-full bg-ink-elevated border border-ink-border rounded px-2 py-1 text-xs text-text-primary font-sans"
+                            />
+                          </label>
+                          <div className="flex items-center gap-2 pt-0.5">
+                            <button
+                              onClick={() => submitCorrection(ex.order_id)}
+                              disabled={correctionSaving}
+                              className="text-[11px] font-semibold text-ink bg-accent rounded px-2.5 py-1 hover:brightness-110 disabled:opacity-50 font-sans"
+                            >
+                              {correctionSaving ? 'Menyimpan…' : 'Simpan Koreksi'}
+                            </button>
+                            <button
+                              onClick={() => setCorrectingOrderId(null)}
+                              className="text-[11px] text-text-muted hover:text-text-primary font-sans"
+                            >
+                              Batal
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {correctionMsg && (
+                  <div
+                    className={`mt-2 font-sans text-[11px] ${correctionMsg.type === 'success' ? 'text-success' : 'text-danger'}`}
+                  >
+                    {correctionMsg.text}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )
       }
       isLast={isLast}
@@ -563,7 +794,12 @@ function StepAnalisis({ datasetId, isLast }) {
       status={
         <>
           {error && <div className="text-danger text-[11px] mb-1">{error}</div>}
-          {result && !result.processed && (
+          {result && result.blocked && (
+            <div className="text-warning text-[11px] flex items-center gap-1">
+              <ShieldAlert size={11} /> {result.reason}
+            </div>
+          )}
+          {result && !result.processed && !result.blocked && (
             <div className="text-text-muted text-[11px]">
               Belum ada data untuk dianalisis — jalankan step 2 (Bersihkan Data) dulu.
             </div>
@@ -624,7 +860,12 @@ function StepDashboard({ datasetId, isLast }) {
       status={
         <>
           {error && <div className="text-danger text-[11px] mb-1">{error}</div>}
-          {result && !result.processed && (
+          {result && result.blocked && (
+            <div className="text-warning text-[11px] flex items-center gap-1">
+              <ShieldAlert size={11} /> {result.reason}
+            </div>
+          )}
+          {result && !result.processed && !result.blocked && (
             <div className="text-text-muted text-[11px]">
               Belum ada data untuk divisualisasikan — jalankan step 2 (Bersihkan Data) dulu.
             </div>
@@ -693,5 +934,237 @@ function StepComingSoon({ number, icon: Icon, color, title, description, note, i
       detail={<div className="text-text-muted text-xs bg-ink-elevated border border-ink-border rounded-md px-3 py-2">{note}</div>}
       isLast={isLast}
     />
+  )
+}
+
+/* ---------- Data Passport + Reconciliation — spec section 6 & 16 ----------
+   Sengaja DILUAR daftar 7-step pipeline: keduanya bukan step yang "dijalankan
+   sekali lalu selesai", tapi alat yang dibuka kapan saja untuk mengaudit
+   dataset (Passport) atau mengecek kecocokan dengan angka dari luar
+   (Reconciliation). Bentuknya 2 kartu collapsible berdampingan. ---------- */
+
+function DataTrustPanel({ datasetId }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <DataPassportCard datasetId={datasetId} />
+      <ReconciliationCard datasetId={datasetId} />
+    </div>
+  )
+}
+
+function DataPassportCard({ datasetId }) {
+  const [open, setOpen] = useState(false)
+  const [passport, setPassport] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  async function load() {
+    setOpen(true)
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await api.getDataPassport(datasetId)
+      setPassport(res)
+    } catch (err) {
+      setError(err.message || String(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="bg-ink-surface border border-ink-border rounded-xl p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <ScrollText size={15} className="text-accent" />
+          <h3 className="text-sm font-semibold text-text-primary">Data Passport</h3>
+        </div>
+        {!open ? (
+          <button
+            onClick={load}
+            className="text-[11px] text-accent border border-accent/40 rounded-md px-2.5 py-1 hover:bg-accent/10 transition"
+          >
+            Buka
+          </button>
+        ) : (
+          <button onClick={() => setOpen(false)} className="text-text-muted hover:text-text-primary">
+            <X size={14} />
+          </button>
+        )}
+      </div>
+      <p className="text-[11px] text-text-muted mt-1">
+        Dari mana data ini, sudah divalidasi apa belum, dan apa yang pernah dikoreksi — dalam 1 tempat.
+      </p>
+
+      {open && (
+        <div className="mt-3 space-y-2 text-xs">
+          {loading && <div className="text-text-muted">Memuat…</div>}
+          {error && <div className="text-danger">{error}</div>}
+          {passport && (
+            <>
+              <PassportRow label="Trust Status">
+                <TrustPill status={passport.dataset.trust_status} />
+              </PassportRow>
+              <PassportRow label="Sumber data">
+                {passport.provenance.total_batches} batch upload, {formatNumber(passport.provenance.total_raw_records)} baris mentah
+              </PassportRow>
+              <PassportRow label="File asli">
+                <ul className="space-y-0.5">
+                  {passport.provenance.sources.map((s) => (
+                    <li key={s.batch_id} className="font-mono text-[10px] text-text-muted truncate">
+                      {s.filename || '(tanpa file)'} — {s.uploaded_at ? new Date(s.uploaded_at).toLocaleDateString('id-ID') : '?'}
+                    </li>
+                  ))}
+                </ul>
+              </PassportRow>
+              <PassportRow label="Baris di Core saat ini">
+                {formatNumber(passport.current_state.total_records_in_core)}
+              </PassportRow>
+              <PassportRow label="Data Quality Score">
+                {passport.current_state.quality_score != null ? `${passport.current_state.quality_score}%` : '—'}
+              </PassportRow>
+              <PassportRow label="Koreksi manual (sepanjang waktu)">
+                {formatNumber(passport.corrections.total_applied_ever)}
+              </PassportRow>
+              <PassportRow label="Reconciliation terakhir">
+                {passport.reconciliation ? (
+                  <span className={passport.reconciliation.status === 'PASSED' ? 'text-success' : 'text-danger'}>
+                    {passport.reconciliation.period_label}: {passport.reconciliation.status} (selisih {passport.reconciliation.difference})
+                  </span>
+                ) : (
+                  'Belum pernah dicek'
+                )}
+              </PassportRow>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PassportRow({ label, children }) {
+  return (
+    <div className="flex items-start justify-between gap-3 border-b border-ink-border/50 pb-1.5 last:border-0">
+      <span className="text-text-muted shrink-0">{label}</span>
+      <span className="text-text-primary text-right">{children}</span>
+    </div>
+  )
+}
+
+function ReconciliationCard({ datasetId }) {
+  const [open, setOpen] = useState(false)
+  const [period, setPeriod] = useState('')
+  const [sourceTotal, setSourceTotal] = useState('')
+  const [notes, setNotes] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState(null)
+  const [history, setHistory] = useState(null)
+
+  async function loadHistory() {
+    try {
+      const res = await api.listReconciliations(datasetId)
+      setHistory(res)
+    } catch {
+      // riwayat gagal dimuat bukan blocker, biarkan silent di panel kecil ini
+    }
+  }
+
+  async function submit() {
+    if (!period.trim() || !sourceTotal.trim()) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      await api.runReconciliation(datasetId, {
+        period_label: period.trim(),
+        source_total: sourceTotal.trim(),
+        notes: notes.trim() || undefined,
+      })
+      setSourceTotal('')
+      setNotes('')
+      await loadHistory()
+    } catch (err) {
+      setError(err.message || String(err))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="bg-ink-surface border border-ink-border rounded-xl p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Scale size={15} className="text-accent" />
+          <h3 className="text-sm font-semibold text-text-primary">Reconciliation</h3>
+        </div>
+        {!open ? (
+          <button
+            onClick={() => {
+              setOpen(true)
+              loadHistory()
+            }}
+            className="text-[11px] text-accent border border-accent/40 rounded-md px-2.5 py-1 hover:bg-accent/10 transition"
+          >
+            Buka
+          </button>
+        ) : (
+          <button onClick={() => setOpen(false)} className="text-text-muted hover:text-text-primary">
+            <X size={14} />
+          </button>
+        )}
+      </div>
+      <p className="text-[11px] text-text-muted mt-1">
+        Banding total revenue dari sumber luar (mis. dashboard marketplace asli) vs hasil hitung Talatee.
+      </p>
+
+      {open && (
+        <div className="mt-3 space-y-2 text-xs">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="2026-01"
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+              className="w-24 bg-ink-elevated border border-ink-border rounded px-2 py-1 text-xs font-mono"
+            />
+            <input
+              type="text"
+              placeholder="Total dari sumber luar"
+              value={sourceTotal}
+              onChange={(e) => setSourceTotal(e.target.value)}
+              className="flex-1 bg-ink-elevated border border-ink-border rounded px-2 py-1 text-xs"
+            />
+          </div>
+          <input
+            type="text"
+            placeholder="Catatan (opsional)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="w-full bg-ink-elevated border border-ink-border rounded px-2 py-1 text-xs"
+          />
+          <button
+            onClick={submit}
+            disabled={submitting}
+            className="text-[11px] font-semibold text-ink bg-accent rounded px-2.5 py-1 hover:brightness-110 disabled:opacity-50"
+          >
+            {submitting ? 'Mengecek…' : 'Cek Reconciliation'}
+          </button>
+          {error && <div className="text-danger">{error}</div>}
+
+          {history?.length > 0 && (
+            <ul className="mt-2 space-y-1 border-t border-ink-border pt-2">
+              {history.map((h) => (
+                <li key={h.id} className="flex items-center justify-between font-mono text-[10px]">
+                  <span className="text-text-muted">{h.period_label}</span>
+                  <span className={h.status === 'PASSED' ? 'text-success' : 'text-danger'}>
+                    {h.status} (selisih {h.difference})
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
   )
 }

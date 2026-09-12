@@ -1,0 +1,41 @@
+order_id,tanggal,produk,kategori,qty,harga_satuan,subtotal,status
+ORD-20260908-001,2026-09-08,Nasi Goreng Spesial,makanan,2,25000,50000,Completed
+ORD-20260908-002,2026-09-08,Ayam Geprek,makanan,1,18000,18000,Completed
+ORD-20260908-003,2026-09-08,Es Teh,minuman,3,5000,15000,Completed
+ORD-20260908-004,2026-09-08,Mie Goreng,makanan,2,17000,34000,Completed
+ORD-20260908-005,2026-09-08,Es Jeruk,minuman,1,7000,7000,Completed
+ORD-20260908-006,2026-09-08,Nasi Ayam Bakar,makanan,2,28000,56000,Completed
+ORD-20260908-007,2026-09-08,Tempe Mendoan,snack,3,8000,24000,Completed
+ORD-20260908-008,2026-09-08,Ayam Penyet,makanan,1,22000,22000,Completed
+ORD-20260908-009,2026-09-08,Teh Hangat,minuman,2,5000,10000,Completed
+ORD-20260908-010,2026-09-08,Nasi Goreng Jawa,makanan,1,23000,23000,Completed
+ORD-20260908-011,2026-09-08,Kopi Hitam,minuman,2,8000,16000,Completed
+ORD-20260908-012,2026-09-08,Bakso Kuah,makanan,2,20000,40000,Completed
+ORD-20260908-013,2026-09-08,Kentang Goreng,snack,1,15000,15000,Pending
+ORD-20260908-014,2026-09-08,Soto Ayam,makanan,3,18000,54000,Completed
+ORD-20260908-015,2026-09-08,Es Campur,minuman,1,12000,12000,Completed
+ORD-20260908-016,2026-09-08,Nasi Lele Goreng,makanan,2,20000,40000,Completed
+ORD-20260908-017,2026-09-08,Tahu Crispy,snack,4,7000,28000,Completed
+ORD-20260908-018,2026-09-08,Jus Alpukat,minuman,2,12000,24000,Completed
+ORD-20260908-019,2026-09-08,Ayam Kremes,makanan,1,27000,27000,Completed
+ORD-20260908-020,2026-09-08,Mie Rebus,makanan,2,15000,30000,Completed
+ORD-20260908-021,2026-09-08,Es Kopi Susu,minuman,1,15000,15000,Completed
+ORD-20260908-022,2026-09-08,Pisang Goreng,snack,3,10000,30000,Completed
+ORD-20260908-023,2026-09-08,Nasi Rawon,makanan,1,30000,30000,Pending
+ORD-20260908-024,2026-09-08,Es Teh,minuman,4,5000,20000,Completed
+ORD-20260908-025,2026-09-08,Nasi Ayam Geprek,makanan,2,23000,46000,Completed
+ORD-20260908-026,2026-09-08,Sate Ayam,makanan,3,25000,75000,Completed
+ORD-20260908-027,2026-09-08,Kerupuk Udang,snack,2,5000,10000,Cancelled
+ORD-20260908-028,2026-09-08,Jus Jeruk,minuman,2,10000,20000,Completed
+ORD-20260908-029,2026-09-08,Nasi Goreng Seafood,makanan,1,35000,35000,Completed
+ORD-20260908-030,2026-09-08,Ayam Bakar Madu,makanan,2,32000,64000,Completed
+ORD-20260908-031,2026-09-08,Es Coklat,minuman,3,10000,30000,Completed
+ORD-20260908-032,2026-09-08,Roti Bakar Coklat,snack,2,15000,30000,Completed
+ORD-20260908-033,2026-09-08,Nasi Pecel,makanan,1,17000,17000,Completed
+ORD-20260908-034,2026-09-08,Sop Ayam,makanan,2,22000,44000,Pending
+ORD-20260908-035,2026-09-08,Es Teh,minuman,5,5000,25000,Completed
+ORD-20260908-036,2026-09-08,Bakwan Goreng,snack,4,5000,20000,Completed
+ORD-20260908-037,2026-09-08,Nasi Campur,makanan,2,30000,60000,Completed
+ORD-20260908-038,2026-09-08,Jus Mangga,minuman,1,12000,12000,Completed
+ORD-20260908-039,2026-09-08,Mie Ayam,makanan,3,18000,54000,Completed
+ORD-20260908-040,2026-09-08,Es Lemon Tea,minuman,2,8000,16000,Completed

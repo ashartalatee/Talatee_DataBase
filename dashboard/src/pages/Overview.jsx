@@ -16,7 +16,7 @@ import StatCard from '../components/StatCard'
 import StatusBadge from '../components/StatusBadge'
 import ProjectsBoard from '../components/ProjectsBoard'
 import { LoadingState, ErrorState } from '../components/States'
-import { formatBytes, formatNumber, formatRelative, colorForIndex } from '../lib/format'
+import { formatBytes, formatNumber, formatCurrency, formatRelative, colorForIndex } from '../lib/format'
 
 const CHECKLIST = [
   'Laboratorium Data Pribadi',
@@ -39,6 +39,7 @@ export default function Overview() {
 
   const {
     total_records,
+    total_revenue,
     total_datasets,
     total_sources,
     total_batches,
@@ -47,9 +48,13 @@ export default function Overview() {
     recent_batches,
   } = stats
 
+  // Omzet per channel/source -- hanya baris is_revenue=True yang dihitung
+  // (lihat REVENUE_STATUSES di app/models/core_transaction.py), jadi ini
+  // benar-benar nilai transaksi yang closing, bukan sekadar jumlah baris.
   const pieData = data_by_source.map((s) => ({
     name: s.source_name,
-    value: s.total_records,
+    value: s.total_revenue,
+    records: s.total_records,
   }))
 
   return (
@@ -77,11 +82,12 @@ export default function Overview() {
       </div>
 
       {/* Stat cards — semua angka nyata dari ledger, bukan simulasi */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         <StatCard
           label="Total Client"
           value={bizLoading ? '…' : formatNumber(businesses.length)}
         />
+        <StatCard label="Total Omzet" value={formatCurrency(total_revenue)} />
         <StatCard label="Proyek (Dataset)" value={formatNumber(total_datasets)} />
         <StatCard label="Integrasi (Source)" value={formatNumber(total_sources)} />
         <StatCard label="Data Records" value={formatNumber(total_records)} />
@@ -176,9 +182,9 @@ export default function Overview() {
           )}
         </div>
 
-        {/* Data by source — pie chart */}
+        {/* Omzet by source — pie chart */}
         <div className="lg:col-span-2 bg-ink-surface border border-ink-border rounded-lg px-5 py-4">
-          <h2 className="text-sm font-medium text-text-primary mb-2">Data by Source</h2>
+          <h2 className="text-sm font-medium text-text-primary mb-2">Omzet by Source</h2>
           {pieData.length === 0 ? (
             <div className="text-text-muted text-sm text-center py-12">Belum ada data.</div>
           ) : (
@@ -200,6 +206,7 @@ export default function Overview() {
                       ))}
                     </Pie>
                     <Tooltip
+                      formatter={(value) => formatCurrency(value)}
                       contentStyle={{
                         background: '#1c222b',
                         border: '1px solid #262c36',
@@ -221,8 +228,13 @@ export default function Overview() {
                       />
                       {d.name}
                     </span>
-                    <span className="text-text-primary font-display">
-                      {formatNumber(d.value)}
+                    <span className="text-right">
+                      <span className="text-text-primary font-display">
+                        {formatCurrency(d.value)}
+                      </span>
+                      <span className="text-text-muted font-display ml-1.5">
+                        ({formatNumber(d.records)} rec)
+                      </span>
                     </span>
                   </li>
                 ))}

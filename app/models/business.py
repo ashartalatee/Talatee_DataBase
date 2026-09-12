@@ -37,6 +37,13 @@ class Business(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+    # Trash (hapus sesaat) — lihat catatan lengkap di Source.deleted_at.
+    # Business adalah level PALING ATAS: trash di sini menyembunyikan
+    # SEMUA source/dataset/batch di bawahnya juga (dicek berantai lewat
+    # app/services/trash.py), walau baris anak-anaknya sendiri tidak
+    # ditulis deleted_at-nya.
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_by: Mapped[str | None] = mapped_column(String, nullable=True)
 
     sources: Mapped[list["Source"]] = relationship(
         back_populates="business", cascade="all, delete-orphan"
