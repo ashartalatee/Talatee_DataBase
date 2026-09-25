@@ -25,12 +25,20 @@ app = FastAPI(title="Talatee Personal Big Data Platform", version="0.1.0")
 #    MagicDNS (*.ts.net) -- keduanya cuma bisa diakses dari perangkat yang
 #    sudah gabung tailnet pribadi Anda, jadi aman dibuka lebih longgar
 #    dibanding origin publik biasa.
+# 3. Vercel -- domain production dashboard (tetap) didaftar eksplisit di
+#    allow_origins, sedangkan URL preview (talatee-dashboard-<hash>.vercel.app,
+#    beda tiap deploy) dicakup lewat regex supaya tidak perlu update manual
+#    setiap kali ada deployment baru.
 # Jangan pernah pakai allow_origins=["*"] bareng allow_credentials=True,
 # browser akan menolak kombinasi itu untuk request yang bawa cookie/session.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_origin_regex=r"^https?://(.*\.devtunnels\.ms|100\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?|.*\.ts\.net(:\d+)?)$",
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://talatee-dashboard.vercel.app",
+    ],
+    allow_origin_regex=r"^https?://(.*\.devtunnels\.ms|100\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?|.*\.ts\.net(:\d+)?|talatee-dashboard-.*\.vercel\.app)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
