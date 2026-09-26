@@ -20,8 +20,8 @@ def login(body: LoginBody, response: Response):
         key="talatee_session",
         value=token,
         httponly=True,
-        samesite="lax",
-        secure=False,  # TODO: ganti True setelah VPS pakai HTTPS
+        samesite="none",
+        secure=True,
         max_age=60 * 60 * 12,
     )
     return {"status": "ok"}
