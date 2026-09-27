@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     dashboard_admin_password_hash: str = ""
     session_secret_key: str = ""
 
+    # Hermes API server (OpenAI-compatible, port 8642 -- BUKAN port dashboard
+    # 9119 yang dipakai buat browser). Diisi lewat .env setelah API server
+    # Hermes diaktifkan (lihat app/api/routes/chat.py).
+    hermes_api_url: str = "http://127.0.0.1:8642"
+    hermes_api_key: str = ""
+
 
 # Instance singleton, di-import di tempat lain: `from app.config import settings`
 settings = Settings()

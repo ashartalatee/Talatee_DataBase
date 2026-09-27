@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { Activity, Workflow, BarChart3, Bot, FileText, Settings, Menu } from 'lucide-react'
+import { Activity, Workflow, BarChart3, FileText, Menu } from 'lucide-react'
 import Sidebar from './components/Sidebar'
 import ComingSoon from './components/ComingSoon'
 import Login from './pages/Login'
@@ -15,10 +15,14 @@ import Sources from './pages/Sources'
 import SourceDetail from './pages/SourceDetail'
 import Datasets from './pages/Datasets'
 import DatasetDetail from './pages/DatasetDetail'
+import DataExplorer from './pages/DataExplorer'
 import Jobs from './pages/Jobs'
 import JobDetail from './pages/JobDetail'
 import Storage from './pages/Storage'
 import Trash from './pages/Trash'
+import Hermes from './pages/Hermes'
+import SettingsPage from './pages/Settings'
+import AIAnalyst from './pages/AIAnalyst'
 
 // Halaman /login dirender BERDIRI SENDIRI (full-screen, tanpa Sidebar) --
 // beda dari semua halaman lain yang selalu dibungkus layout Sidebar+main.
@@ -77,10 +81,12 @@ function AppShell() {
               <Route path="/sources/:id" element={<SourceDetail />} />
               <Route path="/datasets" element={<Datasets />} />
               <Route path="/datasets/:id" element={<DatasetDetail />} />
+              <Route path="/data-explorer" element={<DataExplorer />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/jobs/:id" element={<JobDetail />} />
               <Route path="/storage" element={<Storage />} />
               <Route path="/trash" element={<Trash />} />
+              <Route path="/hermes" element={<Hermes />} />
 
               {/* Bagian yang masih di peta visi, belum dibangun beneran —
                   lihat TALATEE_CONTROL_CENTER.md untuk rencana lengkapnya. */}
@@ -114,16 +120,7 @@ function AppShell() {
                   />
                 }
               />
-              <Route
-                path="/ai-analyst"
-                element={
-                  <ComingSoon
-                    icon={Bot}
-                    title="AI Analyst"
-                    description="Tanya data pakai bahasa natural, misal 'produk apa yang penjualannya naik bulan ini?'. Belum dibangun."
-                  />
-                }
-              />
+              <Route path="/ai-analyst" element={<AIAnalyst />} />
               <Route
                 path="/reports"
                 element={
@@ -134,16 +131,7 @@ function AppShell() {
                   />
                 }
               />
-              <Route
-                path="/settings"
-                element={
-                  <ComingSoon
-                    icon={Settings}
-                    title="Settings"
-                    description="Pengaturan akun, API key, dan preferensi Control Center. Belum dibangun."
-                  />
-                }
-              />
+              <Route path="/settings" element={<SettingsPage />} />
             </Routes>
             </div>
           </main>

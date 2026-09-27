@@ -339,6 +339,33 @@ jumlah correction, 404 untuk dataset yang tidak ada).
   lineage view yang lebih visual (grafik alur RAW → Canonical → Analytics,
   bukan cuma teks di Data Passport), dan correction untuk baris tanpa
   order_id.
+- **Celah keamanan AI Agent — DITEMUKAN, BELUM DIPERBAIKI (28 September
+  2026) — PENTING DIBACA sebelum expose AI Analyst ke siapa pun selain diri
+  sendiri**: `AI Analyst` (chat panel dashboard, `/api/chat` → Hermes) dan
+  halaman `Hermes` (iframe langsung ke UI Hermes) sebenarnya memanggil
+  **profile Hermes yang sama persis** — tidak ada pembatasan tool sama
+  sekali di sisi kita. Artinya siapa pun yang chat lewat AI Analyst
+  berpotensi memicu Hermes menjalankan `terminal`/`execute_code`/
+  `write_file` sungguhan di laptop, bukan cuma 5 MCP tools kita
+  (`get_business_summary`, dkk). Dikonfirmasi lewat dokumentasi pihak
+  ketiga (fireplace-agent, project MCP client lain): prompt-approval Hermes
+  **tidak** menggerbangi MCP tool calls (Hermes 0.17.0) — batas amannya
+  harus di tool allow-list/`agent.disabled_toolsets`, bukan instruksi teks
+  di system prompt. Rencana perbaikan (belum dikerjakan): buat profile
+  Hermes kedua dengan `agent.disabled_toolsets: [terminal, file, browser,
+  code_execution, ...]`, jalankan API server-nya di port terpisah, arahkan
+  `HERMES_API_URL` khusus AI Analyst ke situ. Detail lengkap integrasi ini
+  ada di `ARCHITECTURE.md` entri "Hermes AI Agent Integration" (28 September
+  2026).
+- System prompt/persona Hermes belum disesuaikan — masih menjawab seperti
+  asisten umum generik ("saya bisa bantu nulis artikel, coding, dll") kalau
+  ditanya "apa yang bisa kamu bantu", belum sadar dirinya "otak" Talatee.
+  Direncanakan, belum dikerjakan.
+- Tools/fitur AI Agent lanjutan yang diusulkan tapi SENGAJA ditunda (dinilai
+  prematur untuk skala sekarang — 3 business terdaftar, 2 di antaranya
+  masih data uji coba `Test Warung`/`Test Production`): `get_system_health()`,
+  context-switching toolset per halaman, monitoring otonom/digest harian
+  otomatis via Telegram.
 
 ## 8. Cara mulai kerja lagi dari nol (laptop baru / AI assistant baru)
 

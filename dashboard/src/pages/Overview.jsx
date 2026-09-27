@@ -1,31 +1,12 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
-import { Link } from 'react-router-dom'
-import {
-  CheckCircle2,
-  Bot,
-  Send,
-  ArrowRight,
-  Database,
-  Cpu,
-  LayoutGrid as LayoutGridIcon,
-  Radio,
-} from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Bot, ArrowRight } from 'lucide-react'
 import { api } from '../api/client'
 import { useFetch } from '../lib/useFetch'
 import StatCard from '../components/StatCard'
 import StatusBadge from '../components/StatusBadge'
-import ProjectsBoard from '../components/ProjectsBoard'
 import { LoadingState, ErrorState } from '../components/States'
 import { formatBytes, formatNumber, formatCurrency, formatRelative, colorForIndex } from '../lib/format'
-
-const CHECKLIST = [
-  'Laboratorium Data Pribadi',
-  'Pengembangan Proyek',
-  'Control Center Client',
-  'Monitoring Sistem Real-time',
-  'Analisis & Insight AI',
-  'Update & Improvement Berkelanjutan',
-]
 
 export default function Overview() {
   const { data: stats, loading: statsLoading, error: statsError } = useFetch(
@@ -58,30 +39,19 @@ export default function Overview() {
   }))
 
   return (
-    <div className="space-y-8">
-      {/* Header brand + visi */}
-      <div className="bg-ink-surface border border-ink-border rounded-lg px-6 py-6">
-        <div className="max-w-2xl">
-          <h1 className="font-display text-2xl text-text-primary">TALATEE</h1>
-          <div className="text-accent text-xs font-display tracking-wide mt-1">
-            LABORATORIUM PRIBADI + CONTROL CENTER
-          </div>
-          <p className="text-text-muted text-sm mt-3 leading-relaxed">
-            Tempat bereksperimen, menyiapkan proyek, memantau client, dan memahami data
-            secara pribadi untuk terus berkembang.
-          </p>
-          <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5">
-            {CHECKLIST.map((item) => (
-              <li key={item} className="flex items-center gap-2 text-xs text-text-muted">
-                <CheckCircle2 size={13} className="text-accent shrink-0" strokeWidth={1.75} />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
+    <div className="space-y-6">
+      {/* Header -- ringkas, cuma identitas + satu kalimat. Checklist fitur
+          dibuang: itu daftar marketing, bukan informasi yang berguna
+          dilihat tiap hari (hasil diskusi redesign Overview). */}
+      <div>
+        <h1 className="font-display text-2xl text-text-primary">TALATEE Control Center</h1>
+        <p className="text-text-muted text-sm mt-1">
+          Ringkasan seluruh client dan data yang dikelola lewat platform ini.
+        </p>
       </div>
 
-      {/* Stat cards — semua angka nyata dari ledger, bukan simulasi */}
+      {/* Stat cards -- angka pertama yang harus kelihatan, semuanya nyata
+          dari ledger, bukan simulasi. */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         <StatCard
           label="Total Client"
@@ -98,10 +68,12 @@ export default function Overview() {
         />
       </div>
 
-      {/* Cuplikan registry Project — versi lengkapnya ada di halaman Proyek */}
-      <ProjectsBoard variant="compact" />
+      {/* Insight Otomatis -- dinaikkan & dilebarkan penuh (sebelumnya
+          disempitkan berdua sama diagram arsitektur yang sudah dibuang). Ini
+          bagian paling "hidup" dari Overview, pantas lebih menonjol. */}
+      <AiInsightCard stats={stats} businesses={businesses || []} />
 
-      {/* Client termonitor — data nyata, bukan status kesehatan simulasi */}
+      {/* Client termonitor -- data nyata, bukan status kesehatan simulasi */}
       <div className="bg-ink-surface border border-ink-border rounded-lg">
         <div className="px-5 py-4 border-b border-ink-border flex items-center justify-between">
           <h2 className="text-sm font-medium text-text-primary">Client Termonitor</h2>
@@ -243,59 +215,93 @@ export default function Overview() {
           )}
         </div>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <AiAnalystPreview />
-        <DataFlowDiagram />
-      </div>
     </div>
   )
 }
 
-function AiAnalystPreview() {
-  return (
-    <div className="bg-ink-surface border border-ink-border rounded-lg px-5 py-4">
-      <div className="flex items-center gap-2 mb-1">
-        <Bot size={15} className="text-accent" strokeWidth={1.75} />
-        <h2 className="text-sm font-medium text-text-primary">AI Analyst</h2>
-      </div>
-      <p className="text-text-muted text-xs mb-3">
-        Segera hadir — nanti bisa tanya data pakai bahasa natural, misal &ldquo;produk apa
-        yang penjualannya naik bulan ini?&rdquo;
-      </p>
-      <div className="flex items-center gap-2 bg-ink-elevated border border-ink-border rounded-md px-3 py-2 opacity-60">
-        <span className="text-text-muted text-xs flex-1">Tanya apa saja tentang data...</span>
-        <Send size={13} className="text-text-muted" strokeWidth={1.75} />
-      </div>
-    </div>
-  )
-}
+function AiInsightCard({ stats, businesses }) {
+  const navigate = useNavigate()
+  const { data_by_source, recent_batches, total_revenue } = stats
 
-function DataFlowDiagram() {
-  const steps = [
-    { icon: Database, label: 'Sumber Data', detail: 'CSV, Excel, API' },
-    { icon: Cpu, label: 'Processing', detail: 'Raw \u2192 Core' },
-    { icon: LayoutGridIcon, label: 'Dashboard', detail: 'Insight & laporan' },
-    { icon: Radio, label: 'Automation', detail: 'Segera \u2014 belum tersambung' },
-  ]
+  // Semua dihitung dari data yang SUDAH ke-load di halaman ini -- tidak ada
+  // panggilan API baru, apalagi ke Hermes. Bedanya dari AI Analyst penuh:
+  // ini "kasih tahu duluan" (proaktif), AI Analyst itu "jawab kalau
+  // ditanya" (reaktif) -- dua hal beda, bukan duplikat.
+  const failedRecent = recent_batches.filter((b) => b.status === 'Failed').length
+  const zeroDataClients = businesses.filter((b) => b.total_records === 0)
+  const topSource = data_by_source.length
+    ? [...data_by_source].sort((a, b) => b.total_revenue - a.total_revenue)[0]
+    : null
+  const topSourceShare =
+    topSource && total_revenue > 0 ? Math.round((topSource.total_revenue / total_revenue) * 100) : null
+
+  const insights = []
+  if (failedRecent > 0) {
+    insights.push({
+      text: `${failedRecent} dari ${recent_batches.length} batch terakhir berstatus Failed.`,
+      cta: 'Cek Logs & Errors',
+      to: '/jobs',
+    })
+  }
+  if (topSource && topSourceShare >= 50) {
+    insights.push({
+      text: `${topSource.source_name} menyumbang ${topSourceShare}% dari total omzet.`,
+      cta: 'Lihat Data Explorer',
+      to: '/data-explorer',
+    })
+  }
+  if (zeroDataClients.length > 0) {
+    insights.push({
+      text: `${zeroDataClients.length} client terdaftar belum ada data masuk sama sekali.`,
+      cta: 'Lihat Clients',
+      to: '/businesses',
+    })
+  }
+
+  function askMore() {
+    const topic = insights[0]?.text ?? 'kondisi data secara keseluruhan'
+    try {
+      localStorage.setItem('talatee_ai_analyst_draft', `Jelaskan lebih detail soal: ${topic}`)
+    } catch {
+      // localStorage diblokir -- tetap navigasi, draft-nya cuma tidak ikut
+    }
+    navigate('/ai-analyst')
+  }
+
   return (
     <div className="bg-ink-surface border border-ink-border rounded-lg px-5 py-4">
-      <h2 className="text-sm font-medium text-text-primary mb-3">Data Flow (Arsitektur)</h2>
-      <div className="flex items-center gap-1">
-        {steps.map((step, i) => (
-          <div key={step.label} className="flex items-center flex-1 min-w-0">
-            <div className="flex-1 min-w-0 flex flex-col items-center text-center gap-1.5 px-1">
-              <div className="w-9 h-9 rounded-full bg-ink-elevated border border-ink-border flex items-center justify-center">
-                <step.icon size={15} className="text-accent" strokeWidth={1.75} />
-              </div>
-              <div className="text-text-primary text-[11px]">{step.label}</div>
-              <div className="text-text-muted text-[10px] leading-snug">{step.detail}</div>
-            </div>
-            {i < steps.length - 1 && (
-              <ArrowRight size={13} className="text-text-muted shrink-0" strokeWidth={1.75} />
-            )}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-2">
+            <Bot size={15} className="text-accent" strokeWidth={1.75} />
+            <h2 className="text-sm font-medium text-text-primary">Insight Otomatis</h2>
           </div>
-        ))}
+
+          {insights.length === 0 ? (
+            <p className="text-text-muted text-xs">
+              Tidak ada yang perlu diperhatikan khusus saat ini — semua batch terbaru sukses.
+            </p>
+          ) : (
+            <ul className="space-y-1.5">
+              {insights.map((ins, i) => (
+                <li key={i} className="flex items-center flex-wrap gap-x-3 gap-y-0.5 text-xs">
+                  <span className="text-text-primary">{ins.text}</span>
+                  <Link to={ins.to} className="text-accent hover:underline whitespace-nowrap">
+                    {ins.cta}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <button
+          onClick={askMore}
+          className="shrink-0 flex items-center gap-2 text-xs text-accent border border-ink-border hover:border-accent rounded-md px-3 py-2 transition-colors"
+        >
+          Tanya lebih lanjut
+          <ArrowRight size={12} strokeWidth={1.75} />
+        </button>
       </div>
     </div>
   )

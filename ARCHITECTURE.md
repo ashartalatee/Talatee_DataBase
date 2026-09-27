@@ -866,3 +866,116 @@ dialami user — Windows resolve `localhost` ke IPv6 duluan, uvicorn default cum
   beda-beda, perlu "mapper" ke skema `core` yang seragam).
 - Layer `analytics` (agregasi terjadwal).
 - Auth untuk dashboard (login user, beda dari API key machine-to-machine ini).
+
+# Hermes AI Agent Integration — MCP, AI Analyst, Redesign Navbar & Overview (SELESAI kode, 28 September 2026)
+
+## Konteks
+Tujuan awal: supaya Hermes (agent AI eksternal, Nous Research, jalan lokal di laptop
+lewat Hermes Desktop) bisa "membaca" data bisnis Talatee dan dijawab langsung dari
+dalam dashboard, tanpa buka aplikasi Hermes terpisah.
+
+## Keputusan arsitektur
+- **MCP (Model Context Protocol)** dipakai sebagai jembatan Hermes -> database
+  Talatee, BUKAN akses SQL bebas. Hermes tidak pernah tahu password database dan
+  tidak bisa menjalankan query sembarangan — semua lewat 5 tools bertanda tangan
+  tetap (lihat di bawah).
+- Semua tools MCP **hanya membaca dataset dengan `trust_status == "TRUSTED"`**
+  (konsisten dengan Data Trust Spec Rule 06 yang sudah ada) — dataset yang belum
+  trusted dikecualikan diam-diam dari agregasi, dan tiap tool melaporkan berapa
+  dataset yang dikecualikan supaya angka 0 tidak disalahartikan sebagai "tidak ada
+  data".
+- Paket `mcp` HARUS dipin `==1.30.0` — versi >=2.0 menghapus class `FastMCP` yang
+  dipakai `app/mcp/server.py`.
+
+## File baru
+- `app/mcp/server.py` — MCP server (stdio transport), 5 tools:
+  `list_businesses`, `get_business_summary`, `query_transactions`,
+  `get_sales_summary`, `get_top_products`. Semua query lewat SQLAlchemy
+  parameterized query terhadap `Business -> Source -> Dataset -> Batch ->
+  CoreTransaction` yang sudah ada, tidak menambah tabel baru.
+- `app/api/routes/chat.py` — endpoint `POST /api/chat`, proxy ke API server
+  OpenAI-compatible Hermes (`http://127.0.0.1:8642/v1/chat/completions`, BUKAN
+  port dashboard Hermes `9119`). Stateless — riwayat percakapan dikirim ulang
+  tiap request oleh frontend, backend tidak menyimpan sesi. Error handling
+  eksplisit: 503 (Hermes API server mati), 504 (timeout 300 detik), 502
+  (Hermes balas format tak terduga) — supaya dashboard tidak pernah menampilkan
+  "Failed to fetch" mentah.
+- `dashboard/src/pages/AIAnalyst.jsx` — panel chat asli di dalam dashboard,
+  riwayat persist di `localStorage` browser (bukan backend), tombol
+  "Percakapan baru" buat reset.
+- `dashboard/src/pages/Hermes.jsx` — iframe ke UI Hermes asli (127.0.0.1:9119)
+  buat akses penuh (Sessions/Files/Logs/dll) kalau dibutuhkan, dengan fallback
+  "buka di tab baru" karena iframe http di halaman https (Vercel) diblokir
+  browser (mixed content).
+- `dashboard/src/pages/DataExplorer.jsx` — gabungan Databases+Integrations
+  (dua laporan audit lintas-klien) jadi satu halaman bertab.
+- `dashboard/src/pages/Settings.jsx` — halaman Settings pertama kali beneran
+  berisi (sebelumnya ComingSoon kosong), tab "Sampah" memakai ulang komponen
+  `Trash.jsx` yang sudah ada.
+
+## Setup MCP di sisi Hermes (config, bukan kode — dicatat biar tidak lupa)
+Ditambahkan lewat GUI Hermes (menu MCP -> Add Server, transport `stdio`):
+```
+command: C:/Python312/python.exe
+args: -m app.mcp.server
+env:
+  PYTHONPATH=<path repo ini>
+  DATABASE_URL=<connection string Neon — BEDA dari default lokal di app/config.py>
+  PYTHONDONTWRITEBYTECODE=1
+```
+`PYTHONDONTWRITEBYTECODE=1` penting: tanpa ini, `uvicorn --reload` mendeteksi file
+`.pyc` yang ditulis Python di `app/mcp/__pycache__/` sebagai "perubahan kode" dan
+restart sendiri di tengah request yang sedang jalan (gejala: "Failed to fetch" random
+di AI Analyst, hilang setelah baris ini ditambahkan).
+
+API server OpenAI-compatible Hermes diaktifkan lewat menu Channels -> API server ->
+Configure (`API_SERVER_ENABLED=true`, `API_SERVER_AUTH_KEY=<bebas, harus sama persis
+dengan HERMES_API_KEY di .env Talatee>`, port default `8642`).
+
+## Redesign Navbar (15 -> 9 item)
+Item yang cuma ComingSoon kosong (Monitoring/Automations/Analytics/Reports) dibuang
+dari sidebar (route-nya tetap ada di App.jsx, cuma tidak ditaut) — prinsip: sidebar
+tidak boleh merangkap jadi peta roadmap, cukup menu yang beneran jalan. Databases +
+Integrations digabung jadi "Data Explorer" bertab. Sampah dipindah jadi tab di dalam
+Settings. "Talatee Laboratorium" di-rename "Eksperimen" (tabrakan nama dengan kolom
+"01 — Laboratorium" di papan Proyek — dua konsep beda, nama sama, sumber kebingungan
+nyata). Hasil akhir rata 9 item tanpa section header (grouping sempat dicoba, malah
+menambah tinggi scroll — dibatalkan).
+
+## Redesign Overview
+- Checklist 6 item ("Laboratorium Data Pribadi", dst) di header dibuang — itu daftar
+  fitur ala marketing, bukan informasi yang berguna dilihat tiap hari.
+- Papan "Proyek Saya" (ProjectsBoard compact) dibuang dari Overview — bukan tentang
+  data klien, halaman Proyek sendiri tidak diubah/tetap ada.
+- Diagram statis "Data Flow (Arsitektur)" dibuang — tidak menampilkan data hidup,
+  cuma ilustrasi, ikut bikin halaman terasa berantakan.
+- Widget "Insight Otomatis" baru: dihitung dari data yang SUDAH ke-load di Overview
+  (batch Failed terbaru, source paling dominan omzetnya, client tanpa data sama
+  sekali) — TIDAK memanggil Hermes/API baru. Dinaikkan ke posisi lebih atas &
+  dilebarkan penuh, dengan tombol "Tanya lebih lanjut" yang membawa topik insight
+  itu ke AI Analyst lewat draft di `localStorage` (`talatee_ai_analyst_draft`).
+
+## Validasi
+Setiap potongan diverifikasi jalan sungguhan, bukan cuma "kelihatan benar":
+- `app/mcp/server.py` di-import langsung terhadap `app.models` asli (bukan mock),
+  5 tools ter-register, dicek lewat `mcp.list_tools()`.
+- `app/api/routes/chat.py` ditest lewat `FastAPI TestClient` melawan server tiruan
+  (fake OpenAI-compatible endpoint) untuk 4 skenario: normal (200), API key kosong
+  (500), server mati (503), timeout (504).
+- End-to-end sungguhan lewat browser: `AI Analyst` -> `/api/chat` -> Hermes ->
+  `get_business_summary`/`list_businesses` -> jawaban asli dari database Neon,
+  termasuk kasus Hermes jujur bilang omzet Rp0 karena dataset belum trusted.
+- `npm run build` + `npm run lint` dijalankan ulang setiap kali ada perubahan
+  dashboard — 0 error di semua tahap.
+
+## Belum dikerjakan / diketahui belum aman (lihat PROJECT_CONTEXT_TALATEE.md #7)
+- **Celah keamanan**: `AI Analyst` dan halaman `Hermes` (iframe) memanggil profile
+  Hermes yang SAMA — tidak ada pembatasan tool. Rencana perbaikan: profile Hermes
+  kedua dengan `agent.disabled_toolsets` (matikan `terminal`/`file`/`browser`/
+  `code_execution`), API server terpisah, khusus dipakai AI Analyst.
+- System prompt/persona Hermes belum disesuaikan — masih menjawab seperti asisten
+  umum ("saya bisa bantu nulis artikel, coding, dll"), belum sadar dirinya
+  "otak" Talatee.
+- Tools tambahan yang diusulkan tapi ditunda (dinilai prematur untuk skala
+  sekarang — 3 business, 2 di antaranya data uji coba): `get_system_health()`,
+  context-switching toolset per halaman, monitoring otonom/digest harian otomatis.

@@ -12,3 +12,5 @@ venv/
 talatee-backup-*/
 
 .vite/
+.vercel
+.env*

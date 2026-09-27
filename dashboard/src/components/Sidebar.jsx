@@ -4,34 +4,39 @@ import {
   FlaskConical,
   FolderKanban,
   Users,
-  Activity,
   Database,
-  Workflow,
-  BarChart3,
   Bot,
+  Terminal,
   ScrollText,
-  Plug,
-  FileText,
   Settings,
   UploadCloud,
-  Trash2,
   X,
 } from 'lucide-react'
 
+// Sengaja rata, TANPA section header -- percobaan sebelumnya (grup + header
+// "Data Klien"/"Pengembangan Proyek"/"Sistem") malah menambah tinggi scroll,
+// bukan mengurangi. Perbaikan sebenarnya: buang menu yang belum ada isinya
+// sama sekali (Monitoring/Automations/Analytics/Reports -- semua masih
+// ComingSoon, routenya tetap ada di App.jsx, cuma tidak ditaut dari sini
+// sampai beneran dibangun -- lihat TALATEE_CONTROL_CENTER.md untuk
+// roadmap-nya), dan gabung Databases+Integrations jadi satu "Data Explorer"
+// bertab (sama pola dengan Settings/Sampah di bawah -- keduanya cuma
+// laporan audit lintas-klien, jarang dibuka langsung dibanding Clients).
+//
+// "AI Analyst" sempat dibuang dari daftar ini waktu masih ComingSoon kosong,
+// sekarang dikembalikan karena beneran jalan (chat asli ke Hermes lewat
+// /api/chat -- lihat pages/AIAnalyst.jsx), ditaruh dekat Hermes karena
+// dua-duanya soal AI. "Talatee Laboratorium" tetap "Eksperimen" (tabrakan
+// nama sama kolom "01 -- Laboratorium" di papan Proyek).
 const NAV_ITEMS = [
   { to: '/', label: 'Overview', icon: LayoutGrid, end: true },
-  { to: '/laboratorium', label: 'Talatee Laboratorium', icon: FlaskConical },
-  { to: '/proyek', label: 'Proyek', icon: FolderKanban },
   { to: '/businesses', label: 'Clients', icon: Users },
-  { to: '/monitoring', label: 'Monitoring', icon: Activity },
-  { to: '/datasets', label: 'Databases', icon: Database },
-  { to: '/automations', label: 'Automations', icon: Workflow },
-  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { to: '/data-explorer', label: 'Data Explorer', icon: Database },
+  { to: '/proyek', label: 'Proyek', icon: FolderKanban },
+  { to: '/laboratorium', label: 'Eksperimen', icon: FlaskConical },
   { to: '/ai-analyst', label: 'AI Analyst', icon: Bot },
+  { to: '/hermes', label: 'Hermes', icon: Terminal },
   { to: '/jobs', label: 'Logs & Errors', icon: ScrollText },
-  { to: '/sources', label: 'Integrations', icon: Plug },
-  { to: '/trash', label: 'Sampah', icon: Trash2 },
-  { to: '/reports', label: 'Reports', icon: FileText },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
 

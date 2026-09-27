@@ -219,4 +219,15 @@ export const api = {
     }),
   deleteLabEntry: (id) => request(`/lab-entries/${id}`, { method: 'DELETE' }),
   promoteLabEntry: (id) => request(`/lab-entries/${id}/promote`, { method: 'POST' }),
+
+  // AI Analyst -- diteruskan lewat backend (bukan browser -> Hermes
+  // langsung), supaya API key Hermes tidak pernah sampai ke browser.
+  // Stateless di sisi server: `history` (state React di AIAnalyst.jsx)
+  // dikirim ulang tiap kali supaya Hermes tetap tahu konteks percakapan.
+  sendChatMessage: (message, history) =>
+    request('/api/chat', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, history }),
+    }),
 }
