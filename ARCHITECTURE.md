@@ -979,3 +979,90 @@ Setiap potongan diverifikasi jalan sungguhan, bukan cuma "kelihatan benar":
 - Tools tambahan yang diusulkan tapi ditunda (dinilai prematur untuk skala
   sekarang — 3 business, 2 di antaranya data uji coba): `get_system_health()`,
   context-switching toolset per halaman, monitoring otonom/digest harian otomatis.
+
+# Perbaikan Celah Keamanan AI Agent — Profile Hermes Terbatas (SELESAI, 28 September 2026)
+
+## Konteks
+Lanjutan dari entri "Hermes AI Agent Integration" di atas — celah keamanan yang
+tercatat di bagian "Belum dikerjakan" entri itu sekarang sudah ditutup dan
+diverifikasi. Lihat juga `PROJECT_CONTEXT_TALATEE.md` bagian 7.
+
+## Yang dikerjakan
+1. Profile Hermes baru `talatee-analyst` dibuat **blank** (bukan clone dari
+   `default`) lewat menu Profiles -> Create -> "Clone config from: None
+   (blank)". Clone dari `default` akan ikut menyalin skill, memori, riwayat
+   sesi, dan `.env` (termasuk `API_SERVER_KEY`/port `default`) — dihindari.
+2. `agent.disabled_toolsets` diisi di Config profile ini (cari "disabled",
+   field `comma-separated values`):
+   ```
+   terminal, file, code_execution, browser, web, search, delegation,
+   cronjob, skills, memory, session_search, vision, video, image_gen,
+   video_gen, x_search, tts, stt, todo, kanban, context_engine,
+   connections, computer_use, homeassistant, spotify, discord,
+   discord_admin, yuanbao, a2a, moa, messaging, debugging, rl,
+   google_meet, project
+   ```
+   Nama terakhir (`project`) ditambahkan belakangan setelah ketahuan lewat
+   `tool_search` bahwa toolset itu (`desktop_project`, ganti workspace chat)
+   tidak masuk daftar 29 toolset yang tampil di halaman Skills, jadi tidak
+   ikut ter-cover di percobaan pertama.
+3. MCP server `talatee_business_data` dipasang ulang khusus di profile ini
+   (bukan warisan dari `default`) — command/args/env persis sama seperti di
+   `default`, cuma didaftarkan terpisah karena tiap profile punya konfigurasi
+   MCP sendiri-sendiri.
+
+## Kejutan arsitektur: tidak ada API server per-profile
+Rencana awal (port terpisah per profile, mis. `talatee-analyst` di 8643)
+**tidak berlaku** di instalasi ini karena `gateway.multiplex_profiles: true`
+sudah aktif (kemungkinan bawaan Hermes Desktop). Dalam mode ini:
+- Cuma **satu** proses gateway (milik `default`) yang benar-benar bind port.
+- Profile lain diakses lewat path `http://127.0.0.1:8642/p/<profile>/v1/...`,
+  BUKAN port sendiri.
+- Dialog "Configure API server" di halaman Channels **selalu gagal SAVE**
+  untuk profile sekunder — errornya eksplisit menyuruh pindah ke profile
+  `default`. Ini konsisten meski cuma isi field key saja tanpa
+  `ENABLED=true`/port; dialog-nya tetap mencoba "enable platform" di
+  belakang layar.
+- Solusinya: sesuai dokumentasi resmi ("Requests to `/p/<profile>/v1/...`
+  must present that profile's own `API_SERVER_KEY` from
+  `~/.hermes/profiles/<profile>/.env`"), key itu ditulis **manual** ke file
+  `.env` profile lewat PowerShell:
+  ```powershell
+  Add-Content -Path "C:\Users\<user>\AppData\Local\hermes\profiles\talatee-analyst\.env" -Value "API_SERVER_KEY=<key baru>"
+  ```
+  Halaman "Custom Keys" di Keys **tidak bisa** dipakai untuk ini — nama
+  `API_SERVER_KEY` sudah dikenali sistem (skemanya ada di Channels), jadi
+  ditolak diam-diam (tombol "Add" tidak menimbulkan efek apa pun, tanpa
+  pesan error).
+- `.env` Talatee (root repo) diarahkan ke path baru ini:
+  ```
+  HERMES_API_URL=http://127.0.0.1:8642/p/talatee-analyst
+  HERMES_API_KEY=<key baru, BEDA dari milik default>
+  ```
+  `app/api/routes/chat.py` tidak perlu diubah — endpoint `/v1/chat/completions`
+  ditempel otomatis ke `HERMES_API_URL` apa pun isinya.
+
+## Kenapa verifikasi harus 3 lapis, bukan percaya config
+Ada laporan bug resmi dari Hermes (issue tracker) yang menyebut
+`disabled_toolsets` bisa diam-diam diabaikan khusus di jalur multiplex
+`/p/<profile>/`, meski diterapkan benar di jalur chat UI biasa. Karena itu,
+"tools yang tampil di banner chat lebih pendek" TIDAK dianggap cukup sebagai
+bukti aman. Verifikasi yang dilakukan:
+1. `tool_search` di sesi chat profile `talatee-analyst` mencari
+   `terminal`/`desktop_project` -> tidak ditemukan.
+2. `curl` langsung ke `http://127.0.0.1:8642/p/talatee-analyst/v1/chat/completions`
+   dengan prompt eksplisit "jalankan perintah terminal: dir" -> ditolak,
+   agent melaporkan sendiri tidak ada tool terminal yang termuat.
+3. `curl` ke `http://localhost:8000/api/chat` (endpoint Talatee sendiri,
+   jalur yang benar-benar dipakai AI Analyst) dengan prompt yang sama ->
+   ditolak dengan pesan serupa.
+4. Di ketiga lapis itu, `list_businesses` tetap dites dan berfungsi normal —
+   jadi pembatasannya tidak ikut merusak fungsi yang memang diinginkan.
+
+## Efek samping yang ditemukan (dicatat, belum jadi tugas baru)
+Dari `reasoning_content` di respons agent profile `talatee-analyst`, terlihat
+dia sempat bingung karena system prompt-nya (masih warisan default Hermes)
+menyebut kemampuan shell yang sebenarnya sudah tidak termuat di profile ini.
+Tandanya `SOUL.md` profile ini juga perlu ditulis ulang supaya personanya
+konsisten dengan toolset yang sebenarnya tersedia — bagian dari "Fase 1"
+(perbaikan system prompt) yang masih tercatat belum dikerjakan.

@@ -339,28 +339,50 @@ jumlah correction, 404 untuk dataset yang tidak ada).
   lineage view yang lebih visual (grafik alur RAW → Canonical → Analytics,
   bukan cuma teks di Data Passport), dan correction untuk baris tanpa
   order_id.
-- **Celah keamanan AI Agent — DITEMUKAN, BELUM DIPERBAIKI (28 September
-  2026) — PENTING DIBACA sebelum expose AI Analyst ke siapa pun selain diri
-  sendiri**: `AI Analyst` (chat panel dashboard, `/api/chat` → Hermes) dan
-  halaman `Hermes` (iframe langsung ke UI Hermes) sebenarnya memanggil
+- **Celah keamanan AI Agent — DITEMUKAN DAN SUDAH DIPERBAIKI (28 September
+  2026)**: `AI Analyst` (chat panel dashboard, `/api/chat` → Hermes) dan
+  halaman `Hermes` (iframe langsung ke UI Hermes) awalnya memanggil
   **profile Hermes yang sama persis** — tidak ada pembatasan tool sama
-  sekali di sisi kita. Artinya siapa pun yang chat lewat AI Analyst
+  sekali di sisi kita, jadi siapa pun yang chat lewat AI Analyst
   berpotensi memicu Hermes menjalankan `terminal`/`execute_code`/
-  `write_file` sungguhan di laptop, bukan cuma 5 MCP tools kita
-  (`get_business_summary`, dkk). Dikonfirmasi lewat dokumentasi pihak
-  ketiga (fireplace-agent, project MCP client lain): prompt-approval Hermes
-  **tidak** menggerbangi MCP tool calls (Hermes 0.17.0) — batas amannya
-  harus di tool allow-list/`agent.disabled_toolsets`, bukan instruksi teks
-  di system prompt. Rencana perbaikan (belum dikerjakan): buat profile
-  Hermes kedua dengan `agent.disabled_toolsets: [terminal, file, browser,
-  code_execution, ...]`, jalankan API server-nya di port terpisah, arahkan
-  `HERMES_API_URL` khusus AI Analyst ke situ. Detail lengkap integrasi ini
-  ada di `ARCHITECTURE.md` entri "Hermes AI Agent Integration" (28 September
-  2026).
+  `write_file` sungguhan di laptop. Dikonfirmasi lewat dokumentasi pihak
+  ketiga (fireplace-agent): prompt-approval Hermes **tidak** menggerbangi
+  MCP tool calls — batas amannya harus di tool allow-list/
+  `agent.disabled_toolsets`.
+
+  **Perbaikan yang sudah dikerjakan dan diverifikasi**: dibuat profile
+  Hermes baru `talatee-analyst` (blank, tidak clone dari `default`),
+  `agent.disabled_toolsets` diisi 30 nama toolset (semua kecuali
+  `clarify`) lewat Config → cari "disabled" → edit `comma-separated
+  values`, MCP `talatee_business_data` dipasang ulang khusus di profile
+  ini. Karena `gateway.multiplex_profiles` aktif, profile sekunder TIDAK
+  bisa buka API server/port sendiri (dialog Channels akan selalu gagal
+  SAVE untuk ini) — diakses lewat gateway bersama `default` via path
+  `http://127.0.0.1:8642/p/talatee-analyst/v1/chat/completions`, dengan
+  `API_SERVER_KEY` **milik profile itu sendiri** (beda dari `default`),
+  yang harus ditulis manual ke `...\profiles\talatee-analyst\.env` lewat
+  PowerShell (`Add-Content`) karena UI Channels menolak menyimpan key
+  tanpa "enable" platform, dan "Custom Keys" di halaman Keys diam-diam
+  menolak nama `API_SERVER_KEY` (dianggap key yang sudah dikenali sistem).
+  `.env` Talatee (`HERMES_API_URL`/`HERMES_API_KEY`) diarahkan ke profile
+  ini, bukan lagi ke `default`.
+
+  **Verifikasi** (bukan cuma dipercaya dari config): `tool_search` di
+  dalam sesi chat profile ini tidak menemukan `terminal`, `desktop_project`,
+  atau toolset lain yang dimatikan; permintaan eksplisit "jalankan
+  terminal: dir" ditolak dengan jujur oleh agent, dites di 3 lapis
+  (chat UI Hermes, `curl` langsung ke `/p/talatee-analyst/`, dan lewat
+  `/api/chat` Talatee sendiri) — dan `list_businesses` tetap berfungsi
+  normal di ketiganya. Detail lengkap ada di `ARCHITECTURE.md` entri
+  "Hermes AI Agent Integration" (28 September 2026).
 - System prompt/persona Hermes belum disesuaikan — masih menjawab seperti
   asisten umum generik ("saya bisa bantu nulis artikel, coding, dll") kalau
   ditanya "apa yang bisa kamu bantu", belum sadar dirinya "otak" Talatee.
-  Direncanakan, belum dikerjakan.
+  Terkonfirmasi nyata (bukan cuma dugaan) waktu tes profile
+  `talatee-analyst`: `reasoning_content` agent sempat bingung sendiri
+  karena system prompt masih menyebut kemampuan shell yang sebenarnya
+  sudah dimatikan di profile itu — tanda `SOUL.md` profile ini juga perlu
+  ditulis ulang, bukan cuma toolset-nya. Direncanakan, belum dikerjakan.
 - Tools/fitur AI Agent lanjutan yang diusulkan tapi SENGAJA ditunda (dinilai
   prematur untuk skala sekarang — 3 business terdaftar, 2 di antaranya
   masih data uji coba `Test Warung`/`Test Production`): `get_system_health()`,
