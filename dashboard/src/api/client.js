@@ -239,6 +239,21 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  listKompasReading: () => request('/kompas/reading'),
+  createKompasReading: (url, title) =>
+    request('/kompas/reading', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, title: title || null }),
+    }),
+  updateKompasReading: (id, payload) =>
+    request(`/kompas/reading/${id}`, {
+      method: 'PATCH',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+  deleteKompasReading: (id) => request(`/kompas/reading/${id}`, { method: 'DELETE' }),
+
   listProjects: () => request('/projects'),
   createProject: (payload) =>
     request('/projects', {

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
-  BookOpen,
   Check,
   Flame,
   Hammer,
@@ -13,6 +12,7 @@ import { api } from '../api/client'
 import KompasIdeaBank from '../components/KompasIdeaBank'
 import KompasParkir from '../components/KompasParkir'
 import KompasReview from '../components/KompasReview'
+import KompasBacaan from '../components/KompasBacaan'
 
 const CACHE_KEY = 'talatee_kompas_v2'
 const TARGET = new Date(2027, 0, 1)
@@ -31,10 +31,6 @@ const HABITS = [
     icon: Video,
     min: 'Rekam layar atau tulis satu konten mentah. Tanpa edit rumit.',
   },
-]
-
-const SOON = [
-  { icon: BookOpen, title: 'Bacaan terpilih' },
 ]
 
 const EMPTY = { project: [], speaking: [], content: [] }
@@ -259,8 +255,10 @@ export default function Kompas() {
 
       <KompasReview log={log} />
 
-      <section className="grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-4">
-        <div className="md:col-span-3 rounded-xl border border-ink-border bg-ink-surface p-4 md:p-5">
+      <KompasBacaan />
+
+      <section>
+        <div className="rounded-xl border border-ink-border bg-ink-surface p-4 md:p-5">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="font-display text-base text-text-primary">28 hari terakhir</h2>
             <span className="text-xs text-text-muted">{perfectDays} hari sempurna</span>
@@ -279,18 +277,6 @@ export default function Kompas() {
             })}
           </div>
           <p className="text-xs text-text-muted mt-3">Makin terang, makin banyak yang kamu selesaikan.</p>
-        </div>
-
-        <div className="md:col-span-2 rounded-xl border border-dashed border-ink-border p-4 md:p-5">
-          <h2 className="font-display text-base text-text-primary">Segera hadir</h2>
-          <ul className="mt-3 grid grid-cols-2 md:grid-cols-1 gap-2.5">
-            {SOON.map(({ icon: Icon, title }) => (
-              <li key={title} className="flex items-center gap-2.5 text-sm text-text-muted">
-                <Icon size={15} className="text-accent/70" strokeWidth={1.75} />
-                {title}
-              </li>
-            ))}
-          </ul>
         </div>
       </section>
 
