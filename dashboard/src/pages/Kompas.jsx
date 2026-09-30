@@ -13,6 +13,8 @@ import KompasIdeaBank from '../components/KompasIdeaBank'
 import KompasParkir from '../components/KompasParkir'
 import KompasReview from '../components/KompasReview'
 import KompasBacaan from '../components/KompasBacaan'
+import Reveal from '../components/Reveal'
+import { prefersReducedMotion, useCountUp, useInView } from '../lib/motion'
 
 const CACHE_KEY = 'talatee_kompas_v2'
 const TARGET = new Date(2027, 0, 1)
@@ -96,6 +98,15 @@ export default function Kompas() {
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const left = Math.ceil((TARGET - start) / 864e5)
 
+  // Animasi lembut: angka menghitung naik, cincin terisi dari nol, riwayat menyala berurutan.
+  const shownLeft = useCountUp(left > 0 ? left : 0)
+  const [mounted, setMounted] = useState(() => prefersReducedMotion())
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
+  const [heatRef, heatIn] = useInView()
+
   useEffect(() => {
     let cancelled = false
     async function sync() {
@@ -152,13 +163,14 @@ export default function Kompas() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-3 md:space-y-5">
+      <Reveal>
       <section className="relative overflow-hidden rounded-xl border border-ink-border bg-ink-surface bg-[radial-gradient(ellipse_at_top_right,rgba(124,252,60,0.13),transparent_60%)] p-4 md:p-8">
         <div className="flex items-center justify-between gap-3 md:gap-6">
           <div className="min-w-0">
             <p className="text-text-muted text-sm">{greeting(now.getHours())}, Ashar.</p>
             <div className="flex items-baseline gap-2 md:gap-3 mt-1 md:mt-2">
               <span className="font-display text-5xl md:text-8xl leading-none text-accent glow-text-accent">
-                {left > 0 ? left : 0}
+                {shownLeft}
               </span>
               <span className="font-display text-base md:text-xl text-text-primary">hari</span>
             </div>
@@ -181,8 +193,8 @@ export default function Kompas() {
                 strokeWidth="9"
                 strokeLinecap="round"
                 strokeDasharray={CIRC}
-                strokeDashoffset={CIRC * (1 - done / 3)}
-                className="stroke-accent transition-[stroke-dashoffset] duration-500"
+                strokeDashoffset={CIRC * (1 - (mounted ? done : 0) / 3)}
+                className="stroke-accent transition-[stroke-dashoffset] duration-1000 ease-out motion-reduce:transition-none"
                 style={{ filter: 'drop-shadow(0 0 6px rgba(124,252,60,0.6))' }}
               />
             </svg>
@@ -193,18 +205,19 @@ export default function Kompas() {
           </div>
         </div>
       </section>
+      </Reveal>
 
       <section className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4">
-        {HABITS.map(({ id, name, icon: Icon, min }) => {
+        {HABITS.map(({ id, name, icon: Icon, min }, index) => {
           const dates = log[id]
           const ok = dates.includes(today)
           const streak = streakOf(dates, today)
           return (
+            <Reveal key={id} delay={index * 90} className="h-full">
             <button
-              key={id}
               onClick={() => toggle(id)}
               aria-pressed={ok}
-              className={`group text-left rounded-xl border p-3 md:p-5 flex flex-row md:flex-col items-center md:items-stretch gap-3 md:gap-4 md:min-h-[190px] transition-all ${
+              className={`group w-full h-full text-left rounded-xl border p-3 md:p-5 flex flex-row md:flex-col items-center md:items-stretch gap-3 md:gap-4 md:min-h-[190px] transition-all duration-300 active:scale-[0.98] ${
                 ok
                   ? 'border-accent bg-accent/10 glow-accent-sm'
                   : 'border-ink-border bg-ink-surface hover:border-accent/50 hover:-translate-y-0.5'
@@ -219,7 +232,7 @@ export default function Kompas() {
                   <Icon size={22} strokeWidth={1.75} />
                 </span>
                 <span
-                  className={`w-7 h-7 md:w-9 md:h-9 max-md:order-3 shrink-0 rounded-full flex items-center justify-center border-2 transition-colors ${
+                  className={`w-7 h-7 md:w-9 md:h-9 max-md:order-3 shrink-0 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${ok ? 'scale-100' : 'scale-90'} ${
                     ok
                       ? 'bg-accent border-accent text-ink'
                       : 'border-ink-border text-transparent group-hover:border-accent/60 group-hover:text-accent/50'
@@ -245,25 +258,35 @@ export default function Kompas() {
                 </span>
               </div>
             </button>
+            </Reveal>
           )
         })}
       </section>
 
-      <KompasIdeaBank />
+      <Reveal>
+        <KompasIdeaBank />
+      </Reveal>
 
-      <KompasParkir />
+      <Reveal>
+        <KompasParkir />
+      </Reveal>
 
-      <KompasReview log={log} />
+      <Reveal>
+        <KompasReview log={log} />
+      </Reveal>
 
-      <KompasBacaan />
+      <Reveal>
+        <KompasBacaan />
+      </Reveal>
 
+      <Reveal>
       <section>
         <div className="rounded-xl border border-ink-border bg-ink-surface p-4 md:p-5">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="font-display text-base text-text-primary">28 hari terakhir</h2>
             <span className="text-xs text-text-muted">{perfectDays} hari sempurna</span>
           </div>
-          <div className="grid grid-cols-7 gap-1.5 mt-4">
+          <div ref={heatRef} className="grid grid-cols-7 gap-1.5 mt-4">
             {Array.from({ length: 28 }, (_, i) => {
               const d = daysAgo(27 - i)
               const c = countOn(ymd(d))
@@ -271,7 +294,10 @@ export default function Kompas() {
                 <span
                   key={i}
                   title={`${d.getDate()}/${d.getMonth() + 1}: ${c} dari 3`}
-                  className={`h-5 md:h-7 rounded-md ${CELL[c]} ${ymd(d) === today ? 'ring-1 ring-text-muted' : ''}`}
+                  style={{ transitionDelay: heatIn ? `${i * 18}ms` : '0ms' }}
+                  className={`h-5 md:h-7 rounded-md transition-[opacity,transform,background-color] duration-500 motion-reduce:transition-none ${
+                    heatIn ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
+                  } ${CELL[c]} ${ymd(d) === today ? 'ring-1 ring-text-muted' : ''}`}
                 />
               )
             })}
@@ -279,6 +305,7 @@ export default function Kompas() {
           <p className="text-xs text-text-muted mt-3">Makin terang, makin banyak yang kamu selesaikan.</p>
         </div>
       </section>
+      </Reveal>
 
       <p className={`text-xs ${status === 'offline' ? 'text-warning' : 'text-text-muted'}`}>
         {status === 'loading' && 'Menyinkronkan…'}
