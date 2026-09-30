@@ -28,3 +28,5 @@ __all__ = [
     "Reconciliation",
     "DeletionLog",
 ]
+
+from app.models.kompas_checkin import KompasCheckin  # noqa: F401

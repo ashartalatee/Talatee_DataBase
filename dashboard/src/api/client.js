@@ -187,6 +187,21 @@ export const api = {
   listReconciliations: (id) => request(`/datasets/${id}/reconciliation`),
   getDataPassport: (id) => request(`/datasets/${id}/passport`),
 
+  getKompasCheckins: () => request('/kompas/checkins'),
+  setKompasCheckin: (habit, day, done) =>
+    request('/kompas/checkins', {
+      method: 'PUT',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ habit, day, done }),
+    }),
+  importKompas: (payload) =>
+    request('/kompas/import', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      body: JSON.stringify(payload),
+    }),
+
   listProjects: () => request('/projects'),
   createProject: (payload) =>
     request('/projects', {

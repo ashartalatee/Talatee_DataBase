@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
@@ -12,8 +12,9 @@ import {
   NotebookPen,
   Video,
 } from 'lucide-react'
+import { api } from '../api/client'
 
-const STORAGE_KEY = 'talatee_kompas_v2'
+const CACHE_KEY = 'talatee_kompas_v2'
 const TARGET = new Date(2027, 0, 1)
 
 const HABITS = [
@@ -41,6 +42,7 @@ const SOON = [
 
 const EMPTY = { project: [], speaking: [], content: [] }
 const CIRC = 2 * Math.PI * 52
+const CELL = ['bg-ink-border', 'bg-accent/25', 'bg-accent/55', 'bg-accent']
 
 const ymd = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -63,16 +65,6 @@ function streakOf(dates, today) {
   return n
 }
 
-function loadLog() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return { ...EMPTY, ...JSON.parse(raw).log }
-  } catch {
-    /* penyimpanan browser tidak tersedia */
-  }
-  return EMPTY
-}
-
 function greeting(h) {
   if (h < 11) return 'Selamat pagi'
   if (h < 15) return 'Selamat siang'
@@ -80,35 +72,83 @@ function greeting(h) {
   return 'Selamat malam'
 }
 
-const CELL = ['bg-ink-border', 'bg-accent/25', 'bg-accent/55', 'bg-accent']
+function readCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    if (raw) {
+      const p = JSON.parse(raw)
+      return { log: { ...EMPTY, ...p.log }, synced: !!p.synced }
+    }
+  } catch {
+    /* penyimpanan browser tidak tersedia */
+  }
+  return { log: EMPTY, synced: false }
+}
+
+function writeCache(log, synced) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ log, synced }))
+  } catch {
+    /* abaikan */
+  }
+}
 
 export default function Kompas() {
-  const [log, setLog] = useState(loadLog)
+  const [log, setLog] = useState(() => readCache().log)
+  const [status, setStatus] = useState('loading') // loading | ok | offline
+  const syncedRef = useRef(readCache().synced)
+
   const now = new Date()
   const today = ymd(now)
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const left = Math.ceil((TARGET - start) / 864e5)
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ log }))
-    } catch {
-      /* abaikan */
+    let cancelled = false
+    async function sync() {
+      try {
+        let server = await api.getKompasCheckins()
+        if (!syncedRef.current) {
+          // Pertama kali: pindahkan centang lama dari browser ke database.
+          const local = readCache().log
+          if (HABITS.some((h) => local[h.id].length > 0)) {
+            await api.importKompas({ log: local })
+            server = await api.getKompasCheckins()
+          }
+        }
+        if (cancelled) return
+        const merged = { ...EMPTY, ...server }
+        syncedRef.current = true
+        setLog(merged)
+        writeCache(merged, true)
+        setStatus('ok')
+      } catch {
+        if (!cancelled) setStatus('offline')
+      }
     }
-  }, [log])
+    sync()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
-  function toggle(id) {
-    setLog((prev) => {
-      const has = prev[id].includes(today)
-      return { ...prev, [id]: has ? prev[id].filter((x) => x !== today) : [...prev[id], today] }
-    })
+  async function toggle(id) {
+    const has = log[id].includes(today)
+    const next = { ...log, [id]: has ? log[id].filter((x) => x !== today) : [...log[id], today] }
+    setLog(next)
+    try {
+      await api.setKompasCheckin(id, today, !has)
+      writeCache(next, syncedRef.current)
+    } catch {
+      syncedRef.current = false
+      writeCache(next, false)
+      setStatus('offline')
+    }
   }
 
   const done = HABITS.filter((h) => log[h.id].includes(today)).length
   const countOn = (date) => HABITS.filter((h) => log[h.id].includes(date)).length
-  const perfectDays = new Set(
-    HABITS.flatMap((h) => log[h.id]).filter((d) => countOn(d) === 3),
-  ).size
+  const perfectDays = new Set(HABITS.flatMap((h) => log[h.id]).filter((d) => countOn(d) === 3)).size
 
   const message =
     done === 3
@@ -202,11 +242,7 @@ export default function Kompas() {
               </div>
 
               <div className="flex items-center gap-1.5 text-sm">
-                <Flame
-                  size={16}
-                  className={streak > 0 ? 'text-warning' : 'text-ink-border'}
-                  strokeWidth={2}
-                />
+                <Flame size={16} className={streak > 0 ? 'text-warning' : 'text-ink-border'} strokeWidth={2} />
                 <span className={streak > 0 ? 'text-text-primary' : 'text-text-muted'}>
                   {streak} hari berturut-turut
                 </span>
@@ -250,6 +286,13 @@ export default function Kompas() {
           </ul>
         </div>
       </section>
+
+      <p className={`text-xs ${status === 'offline' ? 'text-warning' : 'text-text-muted'}`}>
+        {status === 'loading' && 'Menyinkronkan…'}
+        {status === 'ok' && 'Tersimpan di database Talatee.'}
+        {status === 'offline' &&
+          'Belum tersinkron ke server. Perubahan tersimpan sementara di browser ini.'}
+      </p>
 
       <Link
         to="/overview"

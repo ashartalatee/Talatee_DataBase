@@ -58,3 +58,5 @@ app.include_router(batches.router)
 app.include_router(stats.router)
 app.include_router(trash.router)
 app.include_router(chat.router)
+from app.api.routes import kompas
+app.include_router(kompas.router)
