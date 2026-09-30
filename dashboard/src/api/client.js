@@ -216,6 +216,21 @@ export const api = {
     }),
   deleteKompasIdea: (id) => request(`/kompas/ideas/${id}`, { method: 'DELETE' }),
 
+  listKompasParked: () => request('/kompas/parked'),
+  createKompasParked: (text, reason) =>
+    request('/kompas/parked', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, reason: reason || null }),
+    }),
+  updateKompasParked: (id, payload) =>
+    request(`/kompas/parked/${id}`, {
+      method: 'PATCH',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+  deleteKompasParked: (id) => request(`/kompas/parked/${id}`, { method: 'DELETE' }),
+
   listProjects: () => request('/projects'),
   createProject: (payload) =>
     request('/projects', {

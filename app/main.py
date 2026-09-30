@@ -62,3 +62,5 @@ from app.api.routes import kompas
 app.include_router(kompas.router)
 from app.api.routes import kompas_ideas
 app.include_router(kompas_ideas.router)
+from app.api.routes import kompas_parked
+app.include_router(kompas_parked.router)

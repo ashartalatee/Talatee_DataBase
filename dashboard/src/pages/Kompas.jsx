@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
-  Archive,
   BookOpen,
   Check,
   Flame,
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react'
 import { api } from '../api/client'
 import KompasIdeaBank from '../components/KompasIdeaBank'
+import KompasParkir from '../components/KompasParkir'
 
 const CACHE_KEY = 'talatee_kompas_v2'
 const TARGET = new Date(2027, 0, 1)
@@ -34,7 +34,6 @@ const HABITS = [
 ]
 
 const SOON = [
-  { icon: Archive, title: 'Parkir ide' },
   { icon: NotebookPen, title: 'Review akhir pekan' },
   { icon: BookOpen, title: 'Bacaan terpilih' },
 ]
@@ -256,6 +255,8 @@ export default function Kompas() {
       </section>
 
       <KompasIdeaBank />
+
+      <KompasParkir />
 
       <section className="grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-4">
         <div className="md:col-span-3 rounded-xl border border-ink-border bg-ink-surface p-4 md:p-5">
