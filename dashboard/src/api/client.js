@@ -201,6 +201,21 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  listKompasIdeas: () => request('/kompas/ideas'),
+  createKompasIdea: (text) =>
+    request('/kompas/ideas', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    }),
+  updateKompasIdea: (id, payload) =>
+    request(`/kompas/ideas/${id}`, {
+      method: 'PATCH',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+  deleteKompasIdea: (id) => request(`/kompas/ideas/${id}`, { method: 'DELETE' }),
+
   listProjects: () => request('/projects'),
   createProject: (payload) =>
     request('/projects', {

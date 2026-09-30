@@ -7,12 +7,12 @@ import {
   Check,
   Flame,
   Hammer,
-  Lightbulb,
   Mic,
   NotebookPen,
   Video,
 } from 'lucide-react'
 import { api } from '../api/client'
+import KompasIdeaBank from '../components/KompasIdeaBank'
 
 const CACHE_KEY = 'talatee_kompas_v2'
 const TARGET = new Date(2027, 0, 1)
@@ -34,7 +34,6 @@ const HABITS = [
 ]
 
 const SOON = [
-  { icon: Lightbulb, title: 'Bank ide konten' },
   { icon: Archive, title: 'Parkir ide' },
   { icon: NotebookPen, title: 'Review akhir pekan' },
   { icon: BookOpen, title: 'Bacaan terpilih' },
@@ -255,6 +254,8 @@ export default function Kompas() {
           )
         })}
       </section>
+
+      <KompasIdeaBank />
 
       <section className="grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-4">
         <div className="md:col-span-3 rounded-xl border border-ink-border bg-ink-surface p-4 md:p-5">

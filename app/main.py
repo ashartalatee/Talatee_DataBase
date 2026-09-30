@@ -60,3 +60,5 @@ app.include_router(trash.router)
 app.include_router(chat.router)
 from app.api.routes import kompas
 app.include_router(kompas.router)
+from app.api.routes import kompas_ideas
+app.include_router(kompas_ideas.router)
