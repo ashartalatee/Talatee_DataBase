@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar'
 import ComingSoon from './components/ComingSoon'
 import Login from './pages/Login'
 import Overview from './pages/Overview'
+import Kompas from './pages/Kompas'
 import Laboratorium from './pages/Laboratorium'
 import LabEntryDetail from './pages/LabEntryDetail'
 import Proyek from './pages/Proyek'
@@ -70,7 +71,8 @@ function AppShell() {
           <main className="flex-1 overflow-y-auto px-4 md:px-8 py-4 md:py-8">
             <div className="max-w-6xl mx-auto">
             <Routes>
-              <Route path="/" element={<Overview />} />
+              <Route path="/" element={<Kompas />} />
+              <Route path="/overview" element={<Overview />} />
               <Route path="/laboratorium" element={<Laboratorium />} />
               <Route path="/laboratorium/:id" element={<LabEntryDetail />} />
               <Route path="/proyek" element={<Proyek />} />

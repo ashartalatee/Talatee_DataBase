@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutGrid,
+  Compass,
   FlaskConical,
   FolderKanban,
   Users,
@@ -29,7 +30,8 @@ import {
 // dua-duanya soal AI. "Talatee Laboratorium" tetap "Eksperimen" (tabrakan
 // nama sama kolom "01 -- Laboratorium" di papan Proyek).
 const NAV_ITEMS = [
-  { to: '/', label: 'Overview', icon: LayoutGrid, end: true },
+  { to: '/', label: 'Kompas', icon: Compass, end: true },
+  { to: '/overview', label: 'Overview', icon: LayoutGrid },
   { to: '/businesses', label: 'Clients', icon: Users },
   { to: '/data-explorer', label: 'Data Explorer', icon: Database },
   { to: '/proyek', label: 'Proyek', icon: FolderKanban },
