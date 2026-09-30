@@ -8,13 +8,13 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models.kompas_reading import DAILY_LIMIT, KompasReading
+from app.kompas_feed import fill_today
+from app.models.kompas_reading import DAILY_LIMIT, KompasReading, guess_kind
 from app.security.dashboard_session import require_dashboard_session
 
 router = APIRouter(prefix="/kompas/reading", tags=["kompas"], dependencies=[Depends(require_dashboard_session)])
 
 MAX_SAVED = 300
-VIDEO_HOSTS = ("youtube.com", "youtu.be", "tiktok.com", "vimeo.com")
 
 
 class ReadingIn(BaseModel):
@@ -23,7 +23,7 @@ class ReadingIn(BaseModel):
 
 
 class ReadingPatch(BaseModel):
-    action: Literal["today", "unplan", "read", "unread"]
+    action: Literal["today", "unplan", "read", "unread", "skip"]
     day: date | None = None
 
 
@@ -34,6 +34,9 @@ class ReadingOut(BaseModel):
     url: str
     title: str
     kind: str
+    origin: str
+    source_name: str | None = None
+    published_at: datetime | None = None
     created_at: datetime
     planned_for: date | None = None
     read_at: datetime | None = None
@@ -43,22 +46,37 @@ def _host(url: str) -> str:
     return (urlparse(url).hostname or "").lower().removeprefix("www.")
 
 
+def _check_day(day: date) -> None:
+    # Toleransi 1 hari untuk beda zona waktu antara browser dan server.
+    if abs((day - date.today()).days) > 1:
+        raise HTTPException(status_code=400, detail="Tanggal tidak valid")
+
+
 def _get_own(db: Session, item_id: uuid.UUID, username: str) -> KompasReading:
     item = (
         db.query(KompasReading)
         .filter(KompasReading.id == item_id, KompasReading.username == username)
         .first()
     )
-    if item is None:
+    if item is None or item.dismissed_at is not None:
         raise HTTPException(status_code=404, detail="Bacaan tidak ditemukan")
     return item
 
 
 @router.get("", response_model=list[ReadingOut])
-def list_reading(username: str = Depends(require_dashboard_session), db: Session = Depends(get_db)):
+def list_reading(
+    day: date | None = None,
+    username: str = Depends(require_dashboard_session),
+    db: Session = Depends(get_db),
+):
+    """Kalau `day` diberikan, 'Hari ini' diisi dari kolam bacaan otomatis lebih dulu.
+    Tidak ada pengambilan dari internet di sini, hanya memilih dari kandidat yang sudah ada."""
+    if day is not None:
+        _check_day(day)
+        fill_today(db, username, day)
     return (
         db.query(KompasReading)
-        .filter(KompasReading.username == username)
+        .filter(KompasReading.username == username, KompasReading.dismissed_at.is_(None))
         .order_by(KompasReading.created_at.desc())
         .all()
     )
@@ -75,22 +93,46 @@ def create_reading(
     if parsed.scheme not in ("http", "https") or not parsed.hostname:
         raise HTTPException(status_code=400, detail="Tautan harus diawali http:// atau https://")
 
-    if db.query(KompasReading).filter(KompasReading.username == username).count() >= MAX_SAVED:
-        raise HTTPException(status_code=400, detail="Simpanan penuh, hapus beberapa dulu")
-    exists = (
-        db.query(KompasReading.id)
+    title = (payload.title or "").strip()
+    existing = (
+        db.query(KompasReading)
         .filter(KompasReading.username == username, KompasReading.url == url)
         .first()
     )
-    if exists:
-        raise HTTPException(status_code=400, detail="Tautan ini sudah tersimpan")
+    if existing:
+        if existing.dismissed_at is None:
+            raise HTTPException(status_code=400, detail="Tautan ini sudah tersimpan")
+        # Pernah dibuang: hidupkan lagi sebagai simpanan manual.
+        existing.dismissed_at = None
+        existing.origin = "manual"
+        existing.planned_for = None
+        existing.read_at = None
+        if title:
+            existing.title = title
+        db.commit()
+        db.refresh(existing)
+        return existing
+
+    saved = (
+        db.query(KompasReading)
+        .filter(
+            KompasReading.username == username,
+            KompasReading.origin == "manual",
+            KompasReading.dismissed_at.is_(None),
+        )
+        .count()
+    )
+    if saved >= MAX_SAVED:
+        raise HTTPException(status_code=400, detail="Simpanan penuh, hapus beberapa dulu")
 
     host = _host(url)
     item = KompasReading(
         username=username,
         url=url,
-        title=(payload.title or "").strip() or host,
-        kind="video" if host.endswith(VIDEO_HOSTS) else "artikel",
+        title=title or host,
+        kind=guess_kind(url),
+        origin="manual",
+        source_name=host,
     )
     db.add(item)
     db.commit()
@@ -110,15 +152,14 @@ def act_reading(
     if payload.action == "today":
         if payload.day is None:
             raise HTTPException(status_code=400, detail="day wajib diisi")
-        # Toleransi 1 hari untuk beda zona waktu antara browser dan server.
-        if abs((payload.day - date.today()).days) > 1:
-            raise HTTPException(status_code=400, detail="Tanggal tidak valid")
+        _check_day(payload.day)
         if item.planned_for != payload.day:
             taken = (
                 db.query(KompasReading)
                 .filter(
                     KompasReading.username == username,
                     KompasReading.planned_for == payload.day,
+                    KompasReading.dismissed_at.is_(None),
                     KompasReading.id != item.id,
                 )
                 .count()
@@ -130,8 +171,18 @@ def act_reading(
         item.planned_for = None
     elif payload.action == "read":
         item.read_at = datetime.now(timezone.utc)
-    else:  # unread
+    elif payload.action == "unread":
         item.read_at = None
+    else:  # skip: ganti bacaan otomatis dengan kandidat berikutnya
+        if item.origin != "auto":
+            raise HTTPException(status_code=400, detail="Hanya untuk bacaan otomatis")
+        day = item.planned_for or payload.day
+        item.dismissed_at = datetime.now(timezone.utc)
+        item.planned_for = None
+        db.flush()
+        if day is not None:
+            _check_day(day)
+            fill_today(db, username, day)
 
     db.commit()
     db.refresh(item)
@@ -145,5 +196,10 @@ def delete_reading(
     db: Session = Depends(get_db),
 ):
     item = _get_own(db, item_id, username)
-    db.delete(item)
+    if item.origin == "auto":
+        # Dibuang, tapi barisnya disimpan supaya artikel yang sama tidak muncul lagi.
+        item.dismissed_at = datetime.now(timezone.utc)
+        item.planned_for = None
+    else:
+        db.delete(item)
     db.commit()

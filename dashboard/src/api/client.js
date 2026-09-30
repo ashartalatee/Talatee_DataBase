@@ -239,7 +239,7 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  listKompasReading: () => request('/kompas/reading'),
+  listKompasReading: (day) => request(day ? `/kompas/reading?day=${day}` : '/kompas/reading'),
   createKompasReading: (url, title) =>
     request('/kompas/reading', {
       method: 'POST',

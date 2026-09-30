@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, Check, ChevronDown, FileText, Plus, Trash2, Undo2, Video } from 'lucide-react'
+import { BookOpen, Check, ChevronDown, FileText, Plus, RefreshCw, Trash2, Undo2, Video } from 'lucide-react'
 import { api } from '../api/client'
 
 const DAILY_LIMIT = 3
@@ -14,6 +14,14 @@ function hostOf(url) {
   } catch {
     return url
   }
+}
+
+function timeAgo(iso) {
+  if (!iso) return ''
+  const h = Math.floor((Date.now() - new Date(iso).getTime()) / 36e5)
+  if (h < 1) return 'baru saja'
+  if (h < 24) return `${h} jam lalu`
+  return `${Math.floor(h / 24)} hari lalu`
 }
 
 function errText(err, fallback) {
@@ -50,7 +58,11 @@ function Title({ item, muted }) {
         >
           {item.title}
         </a>
-        <div className="text-xs text-text-muted">{hostOf(item.url)}</div>
+        <div className="text-xs text-text-muted flex flex-wrap items-center gap-x-1.5">
+          {item.origin === 'auto' && <span className="text-accent/80">Otomatis</span>}
+          <span>{item.source_name || hostOf(item.url)}</span>
+          {item.published_at && <span>· {timeAgo(item.published_at)}</span>}
+        </div>
       </div>
     </div>
   )
@@ -72,7 +84,7 @@ export default function KompasBacaan() {
   useEffect(() => {
     let cancelled = false
     api
-      .listKompasReading()
+      .listKompasReading(ymd(new Date()))
       .then((d) => {
         if (!cancelled) {
           setItems(d)
@@ -97,7 +109,7 @@ export default function KompasBacaan() {
     setError('')
     try {
       const created = await api.createKompasReading(u, title.trim())
-      setItems((prev) => [created, ...prev])
+      setItems((prev) => [created, ...prev.filter((i) => i.id !== created.id)])
       setUrl('')
       setTitle('')
     } catch (err) {
@@ -116,6 +128,16 @@ export default function KompasBacaan() {
     }
   }
 
+  async function skip(id) {
+    setError('')
+    try {
+      await api.updateKompasReading(id, { action: 'skip', day: todayStr })
+      setItems(await api.listKompasReading(todayStr))
+    } catch (err) {
+      setError(errText(err, 'Gagal mengganti. Coba lagi.'))
+    }
+  }
+
   async function remove(id) {
     setError('')
     try {
@@ -127,7 +149,7 @@ export default function KompasBacaan() {
   }
 
   const today = items.filter((i) => i.planned_for === todayStr)
-  const saved = items.filter((i) => !i.read_at && i.planned_for !== todayStr)
+  const saved = items.filter((i) => i.origin !== 'auto' && !i.read_at && i.planned_for !== todayStr)
   const readList = items.filter((i) => i.read_at && i.planned_for !== todayStr)
   const full = today.length >= DAILY_LIMIT
   const visible = showAll ? saved : saved.slice(0, SHOW)
@@ -148,7 +170,8 @@ export default function KompasBacaan() {
         <span className="flex items-center gap-2 text-xs text-text-muted">
           {load === 'ok' && (
             <span>
-              {readToday}/{today.length || 0} dibaca · {saved.length} tersimpan
+              {readToday}/{today.length} dibaca
+              {saved.length > 0 ? ` · ${saved.length} tersimpan` : ''}
             </span>
           )}
           <ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -158,7 +181,7 @@ export default function KompasBacaan() {
       {open && (
         <div className="mt-3">
           <p className="text-xs text-text-muted">
-            Simpan tautan yang layak dibaca, lalu pilih maksimal {DAILY_LIMIT} untuk hari ini. Sisanya menunggu.
+            Tiap pagi terisi otomatis dari sumber pilihan, maksimal {DAILY_LIMIT}. Kurang cocok? Tekan ganti.
           </p>
 
           {load === 'loading' && <p className="text-xs text-text-muted mt-3">Memuat…</p>}
@@ -174,7 +197,10 @@ export default function KompasBacaan() {
                 Hari ini ({today.length}/{DAILY_LIMIT})
               </h3>
               {today.length === 0 ? (
-                <p className="text-sm text-text-muted">Belum ada. Pilih dari simpanan di bawah.</p>
+                <p className="text-sm text-text-muted">
+                  Belum ada bacaan hari ini. Bacaan otomatis muncul setelah pengambilan pagi berjalan, atau pilih
+                  dari simpanan.
+                </p>
               ) : (
                 <ul className="divide-y divide-ink-border">
                   {today.map((i) => (
@@ -189,9 +215,15 @@ export default function KompasBacaan() {
                           <IconBtn label="Tandai sudah dibaca" onClick={() => act(i.id, { action: 'read' })}>
                             <Check size={16} strokeWidth={2.25} />
                           </IconBtn>
-                          <IconBtn label="Kembalikan ke simpanan" onClick={() => act(i.id, { action: 'unplan' })}>
-                            <Undo2 size={15} strokeWidth={1.75} />
-                          </IconBtn>
+                          {i.origin === 'auto' ? (
+                            <IconBtn label="Ganti dengan bacaan lain" onClick={() => skip(i.id)}>
+                              <RefreshCw size={15} strokeWidth={1.75} />
+                            </IconBtn>
+                          ) : (
+                            <IconBtn label="Kembalikan ke simpanan" onClick={() => act(i.id, { action: 'unplan' })}>
+                              <Undo2 size={15} strokeWidth={1.75} />
+                            </IconBtn>
+                          )}
                         </>
                       )}
                     </li>
@@ -207,7 +239,7 @@ export default function KompasBacaan() {
               onChange={(e) => setUrl(e.target.value)}
               maxLength={2000}
               inputMode="url"
-              placeholder="Tempel tautan (https://…)"
+              placeholder="Punya tautan sendiri? Tempel di sini (https://…)"
               aria-label="Tautan bacaan"
               className="flex-1 min-w-0 bg-ink border border-ink-border rounded-md px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent/60"
             />
