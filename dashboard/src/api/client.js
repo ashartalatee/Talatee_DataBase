@@ -231,6 +231,14 @@ export const api = {
     }),
   deleteKompasParked: (id) => request(`/kompas/parked/${id}`, { method: 'DELETE' }),
 
+  listKompasReviews: () => request('/kompas/reviews'),
+  saveKompasReview: (weekStart, payload) =>
+    request(`/kompas/reviews/${weekStart}`, {
+      method: 'PUT',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
   listProjects: () => request('/projects'),
   createProject: (payload) =>
     request('/projects', {
