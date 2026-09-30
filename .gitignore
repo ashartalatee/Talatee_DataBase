@@ -14,3 +14,5 @@ talatee-backup-*/
 .vite/
 .vercel
 .env*
+
+kompas_refresh.log
