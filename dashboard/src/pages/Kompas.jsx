@@ -14,6 +14,7 @@ import KompasParkir from '../components/KompasParkir'
 import KompasReview from '../components/KompasReview'
 import KompasBacaan from '../components/KompasBacaan'
 import Reveal from '../components/Reveal'
+import DailyQuote from '../components/DailyQuote'
 import { prefersReducedMotion, useCountUp, useInView } from '../lib/motion'
 
 const CACHE_KEY = 'talatee_kompas_v2'
@@ -151,6 +152,8 @@ export default function Kompas() {
   }
 
   const done = HABITS.filter((h) => log[h.id].includes(today)).length
+  // Rantai hanya dari kebiasaan yang sudah dicentang hari ini (untuk kalimat tonggak).
+  const doneStreaks = HABITS.filter((h) => log[h.id].includes(today)).map((h) => streakOf(log[h.id], today))
   const countOn = (date) => HABITS.filter((h) => log[h.id].includes(date)).length
   const perfectDays = new Set(HABITS.flatMap((h) => log[h.id]).filter((d) => countOn(d) === 3)).size
 
@@ -204,6 +207,8 @@ export default function Kompas() {
             </div>
           </div>
         </div>
+
+        <DailyQuote done={done} streaks={doneStreaks} left={left} />
       </section>
       </Reveal>
 
