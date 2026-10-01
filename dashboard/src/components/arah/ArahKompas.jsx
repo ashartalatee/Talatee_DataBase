@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SPEC, EX, MC } from "./arahData.js";
 import { api } from "../../api/client";
 import "./arah.css";
@@ -29,7 +29,7 @@ const Dots = ({ v }) => (
 );
 
 const OPEN_KEY = "arah-open";
-const FUN_KEY = "kompas-funnel";
+const FUN_KEY = "arah-funnel-cache"; // hanya cadangan tampilan, sumber kebenaran ada di database
 const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; } };
 const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* abaikan */ } };
 
@@ -110,7 +110,7 @@ function FocusGuard({ onPark }) {
 }
 
 function MoneyCard({ k, x, c, funnel, bump }) {
-  const f = funnel[x] || [0, 0, 0, 0];
+  const f = funnel[k.key] || [0, 0, 0, 0];
   const exs = EX[x] || [];
   return (
     <Fold id={`m${x}`} level="m" icon={k.i} title={`0${x + 1}  ${k.n}`} hint={k.md}>
@@ -170,24 +170,51 @@ function MoneyCard({ k, x, c, funnel, bump }) {
   );
 }
 
+const KEYS = SPEC.money.map((m) => m.key);
+const emptyFunnel = () => Object.fromEntries(KEYS.map((k) => [k, [0, 0, 0, 0]]));
+
 /**
  * Bagian "Arah" untuk halaman Kompas.
- * onPark(teks)          : opsional. Bawaannya memarkir ke database lewat api.createKompasParked.
- * funnel, onFunnelChange: opsional, untuk simpan penghitung ke database.
+ * onPark(teks): opsional. Bawaannya memarkir ke database lewat api.createKompasParked.
+ * Penghitung corong dimuat dari dan disimpan ke database (api.getKompasFunnel / bumpKompasFunnel).
  */
-export default function ArahKompas({ onPark, funnel: funnelProp, onFunnelChange }) {
-  const [own, setOwn] = useState(() => read(FUN_KEY));
+export default function ArahKompas({ onPark }) {
   const [show, setShow] = useFold("arah-detail", true);
-  const funnel = funnelProp ?? own;
+  const [funnel, setFunnel] = useState(() => ({ ...emptyFunnel(), ...read(FUN_KEY) }));
+  const [sync, setSync] = useState("loading"); // loading | ok | offline
 
-  const bump = (x, j, d) => {
-    const next = { ...funnel, [x]: [...(funnel[x] || [0, 0, 0, 0])] };
-    next[x][j] = Math.max(0, next[x][j] + d);
-    setOwn(next); write(FUN_KEY, next); onFunnelChange?.(next);
+  useEffect(() => {
+    let off = false;
+    api.getKompasFunnel()
+      .then((d) => {
+        if (off) return;
+        const next = { ...emptyFunnel(), ...d };
+        setFunnel(next); write(FUN_KEY, next); setSync("ok");
+      })
+      .catch(() => { if (!off) setSync("offline"); });
+    return () => { off = true; };
+  }, []);
+
+  // Tampilan langsung berubah (optimistis), lalu angka resmi dari server menggantikannya.
+  // Kalau server gagal, angka dikembalikan dan pesan ditampilkan.
+  const bump = async (x, j, d) => {
+    const key = KEYS[x];
+    const before = (funnel[key] || [0, 0, 0, 0])[j];
+    if (d < 0 && before === 0) return;
+    const setStage = (v) =>
+      setFunnel((f) => ({ ...f, [key]: (f[key] || [0, 0, 0, 0]).map((c, i) => (i === j ? v : c)) }));
+    setStage(Math.max(0, before + d));
+    try {
+      const r = await api.bumpKompasFunnel(key, j, d);
+      setStage(r.count); setSync("ok");
+      setFunnel((f) => { write(FUN_KEY, f); return f; });
+    } catch {
+      setStage(before); setSync("offline");
+    }
   };
 
   const ok = SPEC.skills.filter((s) => s.s === "ok").length;
-  const hasil = [0, 1, 2, 3].reduce((a, x) => a + ((funnel[x] || [])[3] || 0), 0);
+  const hasil = KEYS.slice(0, 4).reduce((a, k) => a + ((funnel[k] || [])[3] || 0), 0);
 
   return (
     <section className="arah" aria-label="Arah">
@@ -236,6 +263,7 @@ export default function ArahKompas({ onPark, funnel: funnelProp, onFunnelChange 
 
           <Fold id="s-uang" icon="wallet" title="Sumber uang" hint={`${SPEC.money.length} jalur`}>
             <p className="a-note">Dari yang tercepat sampai yang paling berskala. Angka adalah perkiraan awal, ubah di arahData.js sesuai pengalamanmu.</p>
+            {sync === "offline" && <p className="a-note mid">Server belum terjangkau. Angka pelacak belum bisa diubah dan belum tersimpan.</p>}
             <div className="a-secs">
               {SPEC.money.map((k, x) => <MoneyCard key={k.n} k={k} x={x} c={MC[x]} funnel={funnel} bump={bump} />)}
             </div>

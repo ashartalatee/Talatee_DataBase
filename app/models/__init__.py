@@ -34,3 +34,4 @@ from app.models.kompas_idea import KompasIdea  # noqa: F401
 from app.models.kompas_parked import KompasParked  # noqa: F401
 from app.models.kompas_review import KompasReview  # noqa: F401
 from app.models.kompas_reading import KompasReading  # noqa: F401
+from app.models.kompas_funnel import KompasFunnel  # noqa: F401

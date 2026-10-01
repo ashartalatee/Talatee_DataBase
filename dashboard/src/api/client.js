@@ -231,6 +231,14 @@ export const api = {
     }),
   deleteKompasParked: (id) => request(`/kompas/parked/${id}`, { method: 'DELETE' }),
 
+  getKompasFunnel: () => request('/kompas/funnel'),
+  bumpKompasFunnel: (stream, stage, delta) =>
+    request(`/kompas/funnel/${stream}/${stage}`, {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delta }),
+    }),
+
   listKompasReviews: () => request('/kompas/reviews'),
   saveKompasReview: (weekStart, payload) =>
     request(`/kompas/reviews/${weekStart}`, {

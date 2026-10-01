@@ -68,3 +68,5 @@ from app.api.routes import kompas_review
 app.include_router(kompas_review.router)
 from app.api.routes import kompas_reading
 app.include_router(kompas_reading.router)
+from app.api.routes import kompas_funnel
+app.include_router(kompas_funnel.router)
