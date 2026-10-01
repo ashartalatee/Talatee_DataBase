@@ -131,3 +131,4 @@
 .a-dl{display:grid;grid-template-columns:110px 1fr;gap:8px 14px}
 .a-dl dt{color:var(--a);font:500 12px var(--font-display,"IBM Plex Mono",monospace);padding-top:2px}.a-dl dd{margin:0}
 @media (max-width:640px){.a-dl{grid-template-columns:1fr;gap:2px}.a-dl dd{margin-bottom:8px}}
+.a-msg{margin-top:10px!important;font-size:13px}

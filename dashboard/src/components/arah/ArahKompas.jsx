@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { SPEC, EX, MC } from "./arahData.js";
+import { api } from "../../api/client";
 import "./arah.css";
 
 const P = {
@@ -55,23 +56,39 @@ function Fold({ id, def = false, icon, title, hint, level = "s", children }) {
   );
 }
 
+// Memarkir ide ke database lewat API yang sama dengan kartu Parkir ide,
+// lalu memberi tahu kartu itu lewat event agar daftarnya langsung bertambah.
+const parkToDb = async (text) => {
+  const created = await api.createKompasParked(text, "");
+  window.dispatchEvent(new CustomEvent("kompas:parked", { detail: created }));
+};
+
 function FocusGuard({ onPark }) {
   const [idea, setIdea] = useState("");
   const [on, setOn] = useState([false, false, false]);
-  const [local, setLocal] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
   const n = on.filter(Boolean).length;
   const has = idea.trim().length > 0;
   const tone = !has ? "" : n === 3 ? "ok" : n === 2 ? "mid" : "no";
   const text = !has ? "Isi dulu idenya" : n === 3 ? "Kerjakan. Selaras." : n === 2 ? "Ragu. Ubah dulu atau parkir." : "Parkir. Menjauh dari spesialis.";
-  const park = () => {
+  const park = async () => {
     const v = idea.trim();
-    if (!v) return;
-    if (onPark) onPark(v); else setLocal((l) => [v, ...l]);
-    setIdea(""); setOn([false, false, false]);
+    if (!v || busy) return;
+    setBusy(true); setMsg(null);
+    try {
+      await onPark(v);
+      setIdea(""); setOn([false, false, false]);
+      setMsg({ ok: true, t: "Terparkir. Boleh ditinjau lagi setelah 30 hari." });
+    } catch {
+      setMsg({ ok: false, t: "Gagal memarkir ide. Pastikan backend menyala, lalu coba lagi." });
+    } finally {
+      setBusy(false);
+    }
   };
   return (
     <div className="a-guard">
-      <input value={idea} onChange={(e) => setIdea(e.target.value)} placeholder="Mau kerjakan atau pelajari apa hari ini?" aria-label="Ide" />
+      <input value={idea} onChange={(e) => setIdea(e.target.value)} maxLength={200} placeholder="Mau kerjakan atau pelajari apa hari ini?" aria-label="Ide" />
       <div className="a-qs">
         {SPEC.qs.map((q, i) => (
           <button key={q} type="button" className="a-q" aria-pressed={on[i]}
@@ -82,9 +99,11 @@ function FocusGuard({ onPark }) {
       </div>
       <div className="a-verdict">
         <strong className={tone}>{text}</strong>
-        <button type="button" className="a-go" disabled={!has} onClick={park}>Simpan ke Parkir ide</button>
+        <button type="button" className="a-go" disabled={!has || busy} onClick={park}>
+          {busy ? "Memarkir…" : "Simpan ke Parkir ide"}
+        </button>
       </div>
-      {local.length > 0 && <ul className="a-park">{local.map((p, i) => <li key={i}>{p}</li>)}</ul>}
+      {msg && <p className={`a-msg ${msg.ok ? "ok" : "mid"}`} role="status">{msg.t}</p>}
       <p className="a-rule"><b>Aturan:</b> {SPEC.rule}</p>
     </div>
   );
@@ -153,7 +172,7 @@ function MoneyCard({ k, x, c, funnel, bump }) {
 
 /**
  * Bagian "Arah" untuk halaman Kompas.
- * onPark(teks)          : opsional, sambungkan ke Parkir ide yang sudah ada.
+ * onPark(teks)          : opsional. Bawaannya memarkir ke database lewat api.createKompasParked.
  * funnel, onFunnelChange: opsional, untuk simpan penghitung ke database.
  */
 export default function ArahKompas({ onPark, funnel: funnelProp, onFunnelChange }) {
@@ -223,7 +242,7 @@ export default function ArahKompas({ onPark, funnel: funnelProp, onFunnelChange 
           </Fold>
 
           <Fold id="s-fokus" icon="shield" title="Penjaga fokus" hint="3 pertanyaan">
-            <FocusGuard onPark={onPark} />
+            <FocusGuard onPark={onPark ?? parkToDb} />
           </Fold>
         </div>
       )}
