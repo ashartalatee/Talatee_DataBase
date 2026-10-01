@@ -64,6 +64,17 @@ export default function KompasParkir() {
     }
   }, [])
 
+  useEffect(() => {
+    // Ide yang diparkir dari bagian Arah ikut muncul di sini tanpa muat ulang.
+    const onParked = (e) => {
+      const item = e.detail
+      if (!item) return
+      setItems((prev) => (prev.some((i) => i.id === item.id) ? prev : [...prev, item]))
+    }
+    window.addEventListener('kompas:parked', onParked)
+    return () => window.removeEventListener('kompas:parked', onParked)
+  }, [])
+
   const replace = (u) => setItems((prev) => prev.map((i) => (i.id === u.id ? u : i)))
 
   async function add(e) {
