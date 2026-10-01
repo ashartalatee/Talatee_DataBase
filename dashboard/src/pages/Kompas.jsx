@@ -16,6 +16,7 @@ import KompasBacaan from '../components/KompasBacaan'
 import Reveal from '../components/Reveal'
 import DailyQuote from '../components/DailyQuote'
 import { prefersReducedMotion, useCountUp, useInView } from '../lib/motion'
+import ArahKompas from '../components/arah/ArahKompas'
 
 const CACHE_KEY = 'talatee_kompas_v2'
 const TARGET = new Date(2027, 0, 1)
@@ -312,6 +313,7 @@ export default function Kompas() {
       </section>
       </Reveal>
 
+      <ArahKompas />
       <p className={`text-xs ${status === 'offline' ? 'text-warning' : 'text-text-muted'}`}>
         {status === 'loading' && 'Menyinkronkan…'}
         {status === 'ok' && 'Tersimpan di database Talatee.'}
