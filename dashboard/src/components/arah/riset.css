@@ -1,0 +1,49 @@
+/* Tambahan untuk bagian Riset. Gaya dasar (hero, lipatan, tombol) memakai kelas .arah. */
+.riset{margin-top:20px}
+.r-seg{display:flex;gap:6px;margin-top:16px;max-width:360px}
+.r-seg i{flex:1;height:6px;border-radius:3px;background:var(--a-line)}
+.r-seg i.on{background:var(--a);box-shadow:0 0 8px var(--a-glow)}
+.r-h{font:500 13px var(--font-display,"IBM Plex Mono",monospace);color:var(--a);margin:18px 0 6px}
+.r-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.r-chip{padding:7px 14px;border-radius:999px;border:1px solid var(--a-line);background:var(--a-panel2);color:var(--a-text);cursor:pointer;font:500 13px var(--font-display,"IBM Plex Mono",monospace)}
+.r-chip[aria-pressed=true]{border-color:var(--a);color:var(--a);box-shadow:0 0 14px -4px var(--a-glow)}
+.r-add{display:inline-flex;gap:6px;align-items:center}
+.r-add input{width:150px;padding:7px 12px;border-radius:999px;border:1px solid var(--a-line);background:var(--a-bg);color:var(--a-text);font:inherit;font-size:13px}
+.r-card{border:1px solid var(--a-line);border-radius:12px;padding:14px;background:var(--a-panel2);margin-top:10px;display:grid;gap:8px}
+.r-card textarea,.r-card input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--a-line);background:var(--a-bg);color:var(--a-text);font:inherit;resize:vertical}
+.r-card .a-go{justify-self:start}
+.r-tag{color:var(--a);font:500 11.5px var(--font-display,"IBM Plex Mono",monospace);letter-spacing:.04em}
+.r-q{font-size:14.5px}
+.r-hyp{border-left:3px solid var(--a-warn);padding-left:12px;margin-top:12px!important}
+.riset a{color:var(--a)}
+.r-map{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px}
+.r-node{text-align:left;padding:12px;border-radius:12px;border:1px solid var(--a-line);background:var(--a-panel2);color:var(--a-text);cursor:pointer;display:grid;gap:2px}
+.r-node small{color:var(--a-mute);font-family:var(--font-display,monospace)}
+.r-node b{font:600 24px var(--font-display,"IBM Plex Mono",monospace);color:var(--a)}
+.r-node.empty b{color:var(--a-red)}
+.r-node span{font-weight:500}.r-node em{color:var(--a-mute);font-size:12px;font-style:normal}
+.r-node[aria-pressed=true]{border-color:var(--a);box-shadow:0 0 16px -6px var(--a-glow)}
+.r-find{border-top:1px solid var(--a-line);padding:10px 0}
+.r-del{background:none;border:0;color:var(--a-mute);cursor:pointer;text-decoration:underline;font-size:12px}
+.r-score{display:grid;grid-template-columns:1fr 150px 24px;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--a-line)}
+.r-score input{width:100%;accent-color:var(--a)}
+.r-table{width:100%;border-collapse:collapse;font-size:13px}
+.r-table th,.r-table td{padding:8px;border-top:1px solid var(--a-line);text-align:left}
+.r-gate{padding:3px 0;color:var(--a-mute)}.r-gate.ok{color:var(--a)}
+.riset .a-toggle{margin-top:10px}
+.r-step{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--a-line);cursor:pointer}
+.r-step input{margin-top:4px;accent-color:var(--a);width:17px;height:17px}
+@media (max-width:640px){.r-score{grid-template-columns:1fr 24px}.r-score input{grid-column:1/-1;order:3}}
+
+/* Satu kartu ringkas, gayanya disamakan dengan kartu Parkir ide dan Review di Kompas */
+.arah.r-one{margin-top:16px;padding:16px 20px;border:1px solid var(--a-line);border-radius:12px;background:var(--a-panel)}
+.r-head{width:100%;display:flex;align-items:center;gap:12px;background:none;border:0;color:inherit;cursor:pointer;text-align:left;padding:0}
+.r-title{display:flex;align-items:center;gap:10px;font:500 16px var(--font-display,"IBM Plex Mono",monospace);flex:1;min-width:0}
+.r-title .a-ico{width:28px;height:28px;border-radius:8px}.r-title .a-ico svg{width:16px;height:16px}
+.r-hint{color:var(--a-mute);font-size:12px;text-align:right}
+.r-head .a-chev.up{transform:rotate(180deg)}
+.r-body{margin-top:14px;animation:a-fade .25s ease}
+.r-tabs{display:flex;gap:2px;border-bottom:1px solid var(--a-line);margin:14px 0;overflow-x:auto}
+.r-tab{padding:8px 14px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;color:var(--a-mute);cursor:pointer;white-space:nowrap;font:500 13px var(--font-display,"IBM Plex Mono",monospace)}
+.r-tab[aria-selected=true]{color:var(--a);border-bottom-color:var(--a)}
+@media (max-width:520px){.r-hint{display:none}}

@@ -16,10 +16,15 @@ const P = {
   video: '<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/>',
   repeat: '<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>',
   wallet: '<path d="M3 7a2 2 0 0 1 2-2h13v4"/><path d="M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2z"/><circle cx="16" cy="14" r="1"/>',
+  leaf: '<path d="M11 20A7 7 0 0 1 4 13c0-5 4-9 16-9 0 12-4 16-9 16z"/><path d="M4 20c4-4 7-7 11-9"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+  checks: '<path d="M9 6h11M9 12h11M9 18h11M3.5 6l1.5 1.5L7 5M3.5 12l1.5 1.5L7 11M3.5 18l1.5 1.5L7 17"/>',
   shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
 };
 
-const Icon = ({ n }) => (
+export const Icon = ({ n }) => (
   <span className="a-ico">
     <svg viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: P[n] }} />
   </span>
@@ -30,17 +35,17 @@ const Dots = ({ v }) => (
 
 const OPEN_KEY = "arah-open";
 const FUN_KEY = "arah-funnel-cache"; // hanya cadangan tampilan, sumber kebenaran ada di database
-const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; } };
-const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* abaikan */ } };
+export const read = (k) => { try { return JSON.parse(localStorage.getItem(k) || "{}"); } catch { return {}; } };
+export const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* abaikan */ } };
 
 // Status buka/tutup tiap lipatan diingat per browser.
-function useFold(id, def) {
+export function useFold(id, def) {
   const [open, setOpen] = useState(() => { const s = read(OPEN_KEY); return id in s ? !!s[id] : def; });
   const set = (v) => { setOpen(v); const s = read(OPEN_KEY); s[id] = v; write(OPEN_KEY, s); };
   return [open, set];
 }
 
-function Fold({ id, def = false, icon, title, hint, level = "s", children }) {
+export function Fold({ id, def = false, icon, title, hint, level = "s", children }) {
   const [open, set] = useFold(id, def);
   return (
     <details className={`a-fold a-${level}`} open={open}
