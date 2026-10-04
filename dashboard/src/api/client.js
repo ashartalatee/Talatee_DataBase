@@ -99,6 +99,7 @@ export const api = {
     request(datasetId ? `/batches?dataset_id=${datasetId}` : '/batches'),
   getBatch: (id) => request(`/batches/${id}`),
   getBatchRows: (id) => request(`/batches/${id}/rows`),
+  getBatchIssues: (id) => request(`/batches/${id}/issues`),
 
   // Trash (hapus sesaat) & Purge (hapus permanen) — satu pola konsisten di
   // 3 level (source/dataset/batch). purge* butuh confirmName yang harus
