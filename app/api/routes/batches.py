@@ -1,4 +1,4 @@
-import uuid
+﻿import uuid
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.ingestion.file_rows import read_rows
+from app.ingestion.issue_checks import check_rows
 from app.security.dashboard_session import require_dashboard_session
 from app.models import Batch
 from app.models import File as FileModel
@@ -139,3 +140,29 @@ def download_file(file_id: uuid.UUID, db: Session = Depends(get_db)):
         media_type="application/octet-stream",
         headers={"Content-Disposition": f'attachment; filename="{file_row.filename}"'},
     )
+
+
+@router.get("/batches/{batch_id}/issues")
+def get_batch_issues(batch_id: uuid.UUID, db: Session = Depends(get_db)):
+    """Laporan masalah kualitas data (read-only). Tidak mengubah apa pun."""
+    batch = db.get(Batch, batch_id)
+    if batch is None:
+        raise HTTPException(status_code=404, detail="Batch tidak ditemukan")
+
+    file_row = db.query(FileModel).filter(FileModel.batch_id == batch_id).first()
+    if file_row is None:
+        raise HTTPException(status_code=404, detail="Batch ini tidak punya file")
+
+    try:
+        data = get_file(file_row.storage_path)
+    except Exception:
+        raise HTTPException(status_code=502, detail="File mentah tidak bisa dibaca dari storage")
+
+    rows = read_rows(data, file_row.filename)
+    if not rows:
+        raise HTTPException(status_code=422, detail="Format file tidak dikenali (harus .csv atau .xlsx)")
+
+    to_text = lambda v: "" if v is None else str(v)
+    columns = [to_text(c) for c in rows[0]]
+    body = [[to_text(c) for c in r] for r in rows[1:]]
+    return check_rows(columns, body)
