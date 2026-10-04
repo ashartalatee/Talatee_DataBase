@@ -6,6 +6,7 @@ import { useFetch } from '../lib/useFetch'
 import { LoadingState, ErrorState, EmptyState } from '../components/States'
 import StatusBadge from '../components/StatusBadge'
 import ConfirmPurgeModal from '../components/ConfirmPurgeModal'
+import BatchRawTable from '../components/BatchRawTable'
 import { formatDateTime, formatBytes } from '../lib/format'
 
 export default function JobDetail() {
@@ -155,6 +156,8 @@ export default function JobDetail() {
           </ul>
         )}
       </div>
+
+      <BatchRawTable batchId={id} />
 
       {showPurge && (
         <ConfirmPurgeModal

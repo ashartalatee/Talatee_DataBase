@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.ingestion.file_rows import read_rows
 from app.security.dashboard_session import require_dashboard_session
 from app.models import Batch
 from app.models import File as FileModel
@@ -39,6 +40,45 @@ def get_batch(batch_id: uuid.UUID, db: Session = Depends(get_db)):
         **BatchOut.model_validate(batch).model_dump(),
         files=[FileOut.model_validate(f) for f in files],
     )
+
+
+@router.get("/batches/{batch_id}/rows")
+def get_batch_rows(batch_id: uuid.UUID, limit: int = 500, db: Session = Depends(get_db)):
+    """Tampilkan isi file mentah apa adanya (read-only), untuk dilihat manusia.
+    Semua nilai dikembalikan sebagai teks, tanpa pembersihan atau konversi."""
+    batch = db.get(Batch, batch_id)
+    if batch is None:
+        raise HTTPException(status_code=404, detail="Batch tidak ditemukan")
+
+    file_row = db.query(FileModel).filter(FileModel.batch_id == batch_id).first()
+    if file_row is None:
+        raise HTTPException(status_code=404, detail="Batch ini tidak punya file")
+
+    try:
+        data = get_file(file_row.storage_path)
+    except Exception:
+        raise HTTPException(status_code=502, detail="File mentah tidak bisa dibaca dari storage")
+
+    rows = read_rows(data, file_row.filename)
+    if not rows:
+        raise HTTPException(status_code=422, detail="Format file tidak dikenali (harus .csv atau .xlsx)")
+
+    def to_text(v):
+        return "" if v is None else str(v)
+
+    columns = [to_text(c) for c in rows[0]]
+    body = rows[1:]
+    limit = max(1, min(limit, 2000))
+    shown = body[:limit]
+
+    return {
+        "filename": file_row.filename,
+        "total_rows": len(body),
+        "shown_rows": len(shown),
+        "truncated": len(body) > len(shown),
+        "columns": columns,
+        "rows": [[to_text(c) for c in r] for r in shown],
+    }
 
 
 @router.post("/batches/{batch_id}/trash", response_model=BatchOut)

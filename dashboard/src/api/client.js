@@ -1,4 +1,4 @@
-// BASE_URL fleksibel supaya dashboard tetap bisa manggil backend walau
+﻿// BASE_URL fleksibel supaya dashboard tetap bisa manggil backend walau
 // diakses lewat VS Code port forwarding (devtunnels), bukan cuma localhost:
 //
 // 1. Kalau ada env var VITE_API_BASE_URL (isi di dashboard/.env), itu yang
@@ -98,6 +98,7 @@ export const api = {
   listBatches: (datasetId) =>
     request(datasetId ? `/batches?dataset_id=${datasetId}` : '/batches'),
   getBatch: (id) => request(`/batches/${id}`),
+  getBatchRows: (id) => request(`/batches/${id}/rows`),
 
   // Trash (hapus sesaat) & Purge (hapus permanen) — satu pola konsisten di
   // 3 level (source/dataset/batch). purge* butuh confirmName yang harus
