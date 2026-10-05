@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Download, FileText, Trash2, RotateCcw } from 'lucide-react'
 import { api } from '../api/client'
@@ -7,6 +7,7 @@ import { LoadingState, ErrorState, EmptyState } from '../components/States'
 import StatusBadge from '../components/StatusBadge'
 import ConfirmPurgeModal from '../components/ConfirmPurgeModal'
 import BatchRawTable from '../components/BatchRawTable'
+import BatchCleanView from '../components/BatchCleanView'
 import { formatDateTime, formatBytes } from '../lib/format'
 
 export default function JobDetail() {
@@ -158,6 +159,8 @@ export default function JobDetail() {
       </div>
 
       <BatchRawTable batchId={id} />
+
+      <BatchCleanView batchId={id} />
 
       {showPurge && (
         <ConfirmPurgeModal

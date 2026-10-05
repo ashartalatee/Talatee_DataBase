@@ -100,6 +100,7 @@ export const api = {
   getBatch: (id) => request(`/batches/${id}`),
   getBatchRows: (id) => request(`/batches/${id}/rows`),
   getBatchIssues: (id) => request(`/batches/${id}/issues`),
+  getBatchClean: (id) => request(`/batches/${id}/clean`),
 
   // Trash (hapus sesaat) & Purge (hapus permanen) — satu pola konsisten di
   // 3 level (source/dataset/batch). purge* butuh confirmName yang harus
