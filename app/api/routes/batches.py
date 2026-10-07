@@ -1,5 +1,7 @@
-﻿import uuid
-from typing import Optional
+import uuid
+from typing import Literal, Optional
+
+from pydantic import BaseModel
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -9,6 +11,7 @@ from app.db.session import get_db
 from app.ingestion.file_rows import read_rows
 from app.ingestion.issue_checks import check_rows
 from app.ingestion.clean_rows import clean_rows
+from app.models.row_decision import RowDecision
 from app.security.dashboard_session import require_dashboard_session
 from app.models import Batch
 from app.models import File as FileModel
@@ -193,4 +196,104 @@ def get_batch_clean(batch_id: uuid.UUID, db: Session = Depends(get_db)):
     to_text = lambda v: "" if v is None else str(v)
     columns = [to_text(c) for c in rows[0]]
     body = [[to_text(c) for c in r] for r in rows[1:]]
-    return clean_rows(columns, body)
+    decisions = _load_decisions(db, batch_id)
+    return clean_rows(columns, body, decisions)
+
+
+
+class DecisionIn(BaseModel):
+    row_number: int
+    action: Literal["set_value", "drop_row", "revert"]
+    column_name: Optional[str] = None
+    new_value: Optional[str] = None
+    reason: str
+
+
+def _load_decisions(db: Session, batch_id: uuid.UUID) -> list[dict]:
+    rows = (
+        db.query(RowDecision)
+        .filter(RowDecision.batch_id == batch_id)
+        .order_by(RowDecision.decided_at, RowDecision.decision_version)
+        .all()
+    )
+    return [
+        {
+            "row_number": d.row_number, "action": d.action, "column_name": d.column_name,
+            "old_value": d.old_value, "new_value": d.new_value, "reason": d.reason,
+            "decided_by": d.decided_by, "decided_at": d.decided_at.isoformat() if d.decided_at else None,
+            "version": d.decision_version,
+        }
+        for d in rows
+    ]
+
+
+@router.get("/batches/{batch_id}/decisions")
+def list_batch_decisions(batch_id: uuid.UUID, db: Session = Depends(get_db)):
+    """Riwayat lengkap keputusan manusia (append-only)."""
+    return _load_decisions(db, batch_id)
+
+
+@router.post("/batches/{batch_id}/decisions", status_code=201)
+def add_batch_decision(
+    batch_id: uuid.UUID,
+    body: DecisionIn,
+    db: Session = Depends(get_db),
+    username: str = Depends(require_dashboard_session),
+):
+    """Catat keputusan manusia. Hanya INSERT; data asli tidak diubah."""
+    batch = db.get(Batch, batch_id)
+    if batch is None:
+        raise HTTPException(status_code=404, detail="Batch tidak ditemukan")
+    if not body.reason.strip():
+        raise HTTPException(status_code=400, detail="Alasan wajib diisi")
+
+    file_row = db.query(FileModel).filter(FileModel.batch_id == batch_id).first()
+    if file_row is None:
+        raise HTTPException(status_code=404, detail="Batch ini tidak punya file")
+    try:
+        data = get_file(file_row.storage_path)
+    except Exception:
+        raise HTTPException(status_code=502, detail="File mentah tidak bisa dibaca dari storage")
+    rows = read_rows(data, file_row.filename)
+    if not rows:
+        raise HTTPException(status_code=422, detail="Format file tidak dikenali")
+
+    to_text = lambda v: "" if v is None else str(v)
+    columns = [to_text(c) for c in rows[0]]
+    body_rows = [[to_text(c) for c in r] for r in rows[1:]]
+
+    if not (1 <= body.row_number <= len(body_rows)):
+        raise HTTPException(status_code=400, detail=f"Nomor baris harus 1 sampai {len(body_rows)}")
+
+    col = body.column_name or None
+    old = None
+    if body.action == "set_value":
+        if col not in columns:
+            raise HTTPException(status_code=400, detail="Kolom tidak dikenal untuk set_value")
+        if body.new_value is None:
+            raise HTTPException(status_code=400, detail="new_value wajib untuk set_value")
+        j = columns.index(col)
+        r = body_rows[body.row_number - 1]
+        old = r[j] if j < len(r) else ""
+    elif body.action == "drop_row":
+        col = None
+    elif body.action == "revert" and col is not None and col not in columns:
+        raise HTTPException(status_code=400, detail="Kolom tidak dikenal untuk revert")
+
+    count = (
+        db.query(RowDecision)
+        .filter(
+            RowDecision.batch_id == batch_id,
+            RowDecision.row_number == body.row_number,
+            RowDecision.column_name.is_(None) if col is None else RowDecision.column_name == col,
+        )
+        .count()
+    )
+    dec = RowDecision(
+        batch_id=batch_id, row_number=body.row_number, action=body.action, column_name=col,
+        old_value=old, new_value=body.new_value, reason=body.reason.strip(),
+        decided_by=username, decision_version=count + 1,
+    )
+    db.add(dec)
+    db.commit()
+    return {"id": str(dec.id), "version": dec.decision_version}
