@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 
 from app.connectors.base import Connector
 from app.ingestion.channel_guard import check_channel_column
+from app.ingestion.lab_inbox import safe_ensure_lab_entry
 from app.models import Business, Source, Connector as ConnectorModel, Dataset, Batch, File
 from app.storage import minio_client
 
@@ -113,6 +114,7 @@ class IngestionEngine:
             dataset.updated_at = datetime.now(timezone.utc)
 
             self.db.commit()
+            safe_ensure_lab_entry(self.db, business, source, dataset, batch)
             self.db.refresh(batch)
             return batch
 

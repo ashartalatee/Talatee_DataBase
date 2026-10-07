@@ -384,6 +384,14 @@ function ResultCard({ batch, onUploadAnother }) {
         </div>
       )}
 
+      {isSuccess && (
+        <Link
+          to="/laboratorium"
+          className="block text-center border border-accent/40 text-accent text-sm rounded-md py-2 hover:bg-accent/10 transition-colors"
+        >
+          Lihat di Eksperimen →
+        </Link>
+      )}
       <div className="flex gap-3 pt-1">
         <Link
           to={`/jobs/${batch.id}`}
@@ -437,6 +445,14 @@ function MixedResultCard({ batches, onUploadAnother }) {
         ))}
       </ul>
 
+      {successCount > 0 && (
+        <Link
+          to="/laboratorium"
+          className="block text-center border border-accent/40 text-accent text-sm rounded-md py-2 hover:bg-accent/10 transition-colors"
+        >
+          Lihat di Eksperimen →
+        </Link>
+      )}
       <button
         onClick={onUploadAnother}
         className="glow-accent-sm w-full bg-accent text-ink font-medium text-sm rounded-md py-2 hover:bg-accent-soft transition-colors"
