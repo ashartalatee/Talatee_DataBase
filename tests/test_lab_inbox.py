@@ -150,3 +150,54 @@ def test_lab_inbox_failure_does_not_break_ingest(api_key_header, monkeypatch):
     assert r.status_code == 201
     assert r.json()["status"] == "success"  # ingest tetap sukses
     assert _entry_count(names[2]) == 0
+
+def _lab_entry_id(dataset_name):
+    ds_id = str(_dataset_id(dataset_name))
+    listed = client.get("/lab-entries").json()
+    match = [e for e in listed if e["dataset_id"] == ds_id]
+    assert len(match) == 1
+    return match[0]["id"], ds_id
+
+
+def _set_trust(ds_id, status):
+    db = SessionLocal()
+    try:
+        ds = db.get(Dataset, uuid.UUID(ds_id))
+        ds.trust_status = status
+        db.commit()
+    finally:
+        db.close()
+
+
+def test_promote_blocked_when_dataset_not_trusted(api_key_header):
+    names = _names()
+    _upload_ok(api_key_header, names)
+    entry_id, ds_id = _lab_entry_id(names[2])
+
+    r = client.post(f"/lab-entries/{entry_id}/promote")
+    assert r.status_code == 400
+    assert "TRUSTED" in r.json()["detail"]
+    assert client.get(f"/lab-entries/{entry_id}").status_code == 200  # entri tetap ada
+    db = SessionLocal()
+    try:
+        assert db.query(Project).filter(Project.dataset_id == uuid.UUID(ds_id)).count() == 0
+    finally:
+        db.close()
+
+
+def test_promote_allowed_when_dataset_trusted(api_key_header):
+    names = _names()
+    _upload_ok(api_key_header, names)
+    entry_id, ds_id = _lab_entry_id(names[2])
+    _set_trust(ds_id, "TRUSTED")
+
+    r = client.post(f"/lab-entries/{entry_id}/promote")
+    assert r.status_code == 201
+    assert client.get(f"/lab-entries/{entry_id}").status_code == 404  # entri staging dihapus
+
+
+def test_promote_idea_without_dataset_still_allowed():
+    r = client.post("/lab-entries", json={"name": f"Ide tanpa data {uuid.uuid4().hex[:6]}"})
+    assert r.status_code == 201
+    r2 = client.post(f"/lab-entries/{r.json()['id']}/promote")
+    assert r2.status_code == 201

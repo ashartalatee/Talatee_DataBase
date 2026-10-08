@@ -93,8 +93,12 @@ export default function LabEntryDetail() {
     ) {
       return
     }
-    await api.promoteLabEntry(entry.id)
-    navigate('/proyek')
+    try {
+      await api.promoteLabEntry(entry.id)
+      navigate('/proyek')
+    } catch (err) {
+      window.alert(String(err.message || err).replace(/^\d+:\s*/, '').replace(/^"|"$/g, ''))
+    }
   }
 
   return (

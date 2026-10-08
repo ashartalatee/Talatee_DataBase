@@ -49,6 +49,8 @@ export default function Laboratorium() {
     try {
       await api.promoteLabEntry(entry.id)
       reload()
+    } catch (err) {
+      window.alert(String(err.message || err).replace(/^\d+:\s*/, '').replace(/^"|"$/g, ''))
     } finally {
       setPromotingId(null)
     }

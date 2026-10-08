@@ -135,6 +135,18 @@ def promote_lab_entry(entry_id: uuid.UUID, db: Session = Depends(get_db)):
     if entry is None:
         raise HTTPException(status_code=404, detail="Entri tidak ditemukan")
 
+    if entry.dataset_id is not None:
+        dataset = db.get(Dataset, entry.dataset_id)
+        if dataset is not None and dataset.trust_status != "TRUSTED":
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Dataset belum TRUSTED (status: {dataset.trust_status}). "
+                    "Jalankan Bersihkan Data dan Validasi sampai lolos, "
+                    "lalu jadikan dataset terpercaya sebelum dipromosikan ke Proyek."
+                ),
+            )
+
     project = Project(
         name=entry.name,
         tier="laboratorium",

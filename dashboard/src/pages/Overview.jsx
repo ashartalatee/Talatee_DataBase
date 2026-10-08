@@ -22,6 +22,8 @@ export default function Overview() {
     total_records,
     total_revenue,
     total_datasets,
+    trusted_datasets,
+    untrusted_datasets,
     total_sources,
     total_batches,
     total_storage_bytes,
@@ -57,8 +59,22 @@ export default function Overview() {
           label="Total Client"
           value={bizLoading ? '…' : formatNumber(businesses.length)}
         />
-        <StatCard label="Total Omzet" value={formatCurrency(total_revenue)} />
-        <StatCard label="Proyek (Dataset)" value={formatNumber(total_datasets)} />
+        <StatCard
+          label="Total Omzet"
+          value={formatCurrency(total_revenue)}
+          sublabel={
+            untrusted_datasets == null
+              ? undefined
+              : untrusted_datasets > 0
+                ? `hanya TRUSTED · ${formatNumber(untrusted_datasets)} belum`
+                : 'dari dataset TRUSTED'
+          }
+        />
+        <StatCard
+          label="Proyek (Dataset)"
+          value={formatNumber(total_datasets)}
+          sublabel={trusted_datasets == null ? undefined : `${formatNumber(trusted_datasets)} terpercaya`}
+        />
         <StatCard label="Integrasi (Source)" value={formatNumber(total_sources)} />
         <StatCard label="Data Records" value={formatNumber(total_records)} />
         <StatCard
