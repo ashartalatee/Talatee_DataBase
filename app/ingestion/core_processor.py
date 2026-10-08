@@ -82,6 +82,22 @@ class UnrecognizedSchemaError(Exception):
 
 
 def process_dataset(db: Session, dataset_id) -> dict:
+    """Pintu tunggal Raw->Core. Menurunkan trust_status ke INGESTED SEBELUM
+    memproses, karena isi core_transactions akan berubah (tombol Bersihkan
+    Data, trash/restore batch, dan jalur lain yang memanggil fungsi ini).
+    Trust harus diperoleh ulang lewat Validasi dan Promote, bukan dibawa dari
+    data yang isinya sudah berbeda (Data Trust Spec section 12/7).
+
+    Diturunkan dulu, baru diproses: kalau pemrosesan gagal di tengah jalan,
+    kepercayaannya sudah terlanjur turun -- sisi yang aman."""
+    dataset = db.get(Dataset, dataset_id)
+    if dataset is not None and dataset.trust_status != "INGESTED":
+        dataset.trust_status = "INGESTED"
+        db.commit()
+    return _process_dataset_impl(db, dataset_id)
+
+
+def _process_dataset_impl(db: Session, dataset_id) -> dict:
     """Proses ULANG semua batch berstatus 'success' milik satu dataset.
 
     Dua tahap:
