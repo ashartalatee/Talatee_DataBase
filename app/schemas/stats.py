@@ -22,6 +22,8 @@ class OverviewStatsOut(BaseModel):
     total_records: int
     total_revenue: float
     total_datasets: int
+    trusted_datasets: int = 0
+    untrusted_datasets: int = 0
     total_sources: int
     total_batches: int
     total_storage_bytes: int

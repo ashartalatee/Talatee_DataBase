@@ -46,6 +46,19 @@ def get_overview_stats(db: Session = Depends(get_db)):
         or 0
     )
 
+    trusted_datasets = (
+        db.query(func.count(Dataset.id))
+        .join(Source, Dataset.source_id == Source.id)
+        .join(Business, Source.business_id == Business.id)
+        .filter(
+            Dataset.deleted_at.is_(None),
+            Source.deleted_at.is_(None),
+            Business.deleted_at.is_(None),
+            Dataset.trust_status == "TRUSTED",
+        )
+        .scalar()
+        or 0
+    )
     batch_chain = (
         db.query(Batch)
         .join(Dataset, Batch.dataset_id == Dataset.id)
@@ -80,7 +93,7 @@ def get_overview_stats(db: Session = Depends(get_db)):
         .join(Dataset, Batch.dataset_id == Dataset.id)
         .join(Source, Dataset.source_id == Source.id)
         .join(Business, Source.business_id == Business.id)
-        .filter(CoreTransaction.is_revenue.is_(True), *_NOT_TRASHED)
+        .filter(CoreTransaction.is_revenue.is_(True), Dataset.trust_status == "TRUSTED", *_NOT_TRASHED)
         .scalar()
     )
     total_revenue = float(total_revenue or 0)
@@ -90,7 +103,7 @@ def get_overview_stats(db: Session = Depends(get_db)):
     # bikin fan-out yang merusak SUM(Batch.records_saved).
     revenue_by_source_rows = (
         db.query(Source.id, func.coalesce(func.sum(CoreTransaction.subtotal), 0))
-        .join(Dataset, (Dataset.source_id == Source.id) & (Dataset.deleted_at.is_(None)))
+        .join(Dataset, (Dataset.source_id == Source.id) & (Dataset.deleted_at.is_(None)) & (Dataset.trust_status == "TRUSTED"))
         .join(Batch, (Batch.dataset_id == Dataset.id) & (Batch.deleted_at.is_(None)))
         .join(CoreTransaction, (CoreTransaction.batch_id == Batch.id) & (CoreTransaction.is_revenue.is_(True)))
         .filter(Source.deleted_at.is_(None))
@@ -159,6 +172,8 @@ def get_overview_stats(db: Session = Depends(get_db)):
         total_records=total_records,
         total_revenue=total_revenue,
         total_datasets=total_datasets,
+        trusted_datasets=trusted_datasets,
+        untrusted_datasets=total_datasets - trusted_datasets,
         total_sources=total_sources,
         total_batches=total_batches,
         total_storage_bytes=total_storage_bytes,
