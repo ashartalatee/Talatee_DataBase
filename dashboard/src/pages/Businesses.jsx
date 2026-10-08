@@ -133,6 +133,19 @@ export default function Businesses() {
                           <div className="text-text-muted text-[11px]">records</div>
                         </div>
                       </div>
+                    {b.trusted_datasets != null && b.total_datasets > 0 && (
+                        <div
+                          className={`mt-3 text-[11px] font-display ${
+                            b.trusted_datasets === b.total_datasets
+                              ? 'text-success'
+                              : b.trusted_datasets > 0
+                                ? 'text-warning'
+                                : 'text-text-muted'
+                          }`}
+                        >
+                          {b.trusted_datasets}/{b.total_datasets} dataset terpercaya
+                        </div>
+                      )}
                     </Link>
                   ))}
                 </div>

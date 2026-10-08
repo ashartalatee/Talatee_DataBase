@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -36,6 +36,7 @@ def list_businesses(db: Session = Depends(get_db)):
             func.count(func.distinct(Source.id)),
             func.count(func.distinct(Dataset.id)),
             func.coalesce(func.sum(Batch.records_saved), 0),
+            func.count(func.distinct(case((Dataset.trust_status == "TRUSTED", Dataset.id), else_=None))),
         )
         .filter(Business.deleted_at.is_(None))
         .outerjoin(Source, (Source.business_id == Business.id) & (Source.deleted_at.is_(None)))
@@ -54,9 +55,10 @@ def list_businesses(db: Session = Depends(get_db)):
             created_at=b.created_at,
             total_sources=total_sources,
             total_datasets=total_datasets,
+            trusted_datasets=trusted_datasets,
             total_records=total_records,
         )
-        for b, total_sources, total_datasets, total_records in rows
+        for b, total_sources, total_datasets, total_records, trusted_datasets in rows
     ]
 
 

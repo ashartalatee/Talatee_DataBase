@@ -15,6 +15,7 @@ class BusinessListItemOut(BaseModel):
     created_at: datetime
     total_sources: int
     total_datasets: int
+    trusted_datasets: int = 0
     total_records: int
     deleted_at: Optional[datetime] = None
     deleted_by: Optional[str] = None
