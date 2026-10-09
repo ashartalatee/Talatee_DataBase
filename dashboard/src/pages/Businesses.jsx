@@ -28,7 +28,7 @@ const CATEGORY_META = {
 }
 
 export default function Businesses() {
-  const { data, loading, error, reload } = useFetch(() => api.listBusinesses(), [])
+  const { data, loading, error, reload } = useFetch(() => api.listBusinesses('trusted'), [])
   const [busyId, setBusyId] = useState(null)
   const [actionError, setActionError] = useState(null)
 
@@ -82,7 +82,7 @@ export default function Businesses() {
       )}
 
       {data.length === 0 ? (
-        <EmptyState label="Belum ada business. Upload data untuk membuat business pertama." />
+        <EmptyState label="Belum ada client terpercaya. Data baru masuk ke Eksperimen dulu; jadikan dataset-nya TRUSTED agar client muncul di sini." />
       ) : (
         categoryOrder
           .filter((cat) => grouped[cat]?.length)

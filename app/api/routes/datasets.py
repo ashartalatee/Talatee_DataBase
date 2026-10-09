@@ -1,6 +1,7 @@
 import uuid
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -16,14 +17,31 @@ router = APIRouter(prefix="/datasets", tags=["datasets"], dependencies=[Depends(
 
 
 @router.get("", response_model=list[DatasetListItemOut])
-def list_datasets(db: Session = Depends(get_db)):
+def list_datasets(
+    trust: Literal["all", "trusted", "untrusted"] = Query("all"),
+    db: Session = Depends(get_db),
+):
     """List semua dataset dengan info ringkas: total records (jumlah
     records_saved dari semua batch sukses & TIDAK di-trash) dan total
     batches. Dataset yang ada di Sampah, atau source induknya ada di
-    Sampah, tidak ikut muncul di sini — lihat GET /trash untuk itu."""
+    Sampah, tidak ikut muncul di sini — lihat GET /trash untuk itu.
+
+    Parameter `trust` (default "all" = perilaku lama, tidak merusak
+    pemanggil yang sudah ada):
+      - "trusted"   -> hanya dataset berstatus TRUSTED (dipakai Data Explorer
+                       / Clients: hanya data yang sudah lolos validasi)
+      - "untrusted" -> hanya yang BELUM TRUSTED (wilayah Eksperimen)
+      - "all"       -> semuanya (dipakai form Laboratorium untuk memilih
+                       dataset yang mau ditautkan ke eksperimen)
+    """
+    base = trash_service.visible_datasets_query(db)
+    if trust == "trusted":
+        base = base.filter(Dataset.trust_status == "TRUSTED")
+    elif trust == "untrusted":
+        base = base.filter(Dataset.trust_status != "TRUSTED")
+
     rows = (
-        trash_service.visible_datasets_query(db)
-        .add_columns(
+        base.add_columns(
             func.coalesce(func.sum(Batch.records_saved), 0).label("total_records"),
             func.count(Batch.id).label("total_batches"),
         )

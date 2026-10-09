@@ -13,7 +13,7 @@ export default function Overview() {
     () => api.getOverview(),
     []
   )
-  const { data: businesses, loading: bizLoading } = useFetch(() => api.listBusinesses(), [])
+  const { data: businesses, loading: bizLoading } = useFetch(() => api.listBusinesses('trusted'), [])
 
   if (statsLoading) return <LoadingState label="Menghitung ledger" />
   if (statsError) return <ErrorState message={statsError} />

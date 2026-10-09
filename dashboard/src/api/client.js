@@ -1,4 +1,4 @@
-﻿// BASE_URL fleksibel supaya dashboard tetap bisa manggil backend walau
+// BASE_URL fleksibel supaya dashboard tetap bisa manggil backend walau
 // diakses lewat VS Code port forwarding (devtunnels), bukan cuma localhost:
 //
 // 1. Kalau ada env var VITE_API_BASE_URL (isi di dashboard/.env), itu yang
@@ -85,7 +85,7 @@ export const api = {
   getOverview: () => request('/stats/overview'),
 
   listBusinessCategories: () => request('/businesses/categories'),
-  listBusinesses: () => request('/businesses'),
+  listBusinesses: (trust) => request(trust ? `/businesses?trust=${trust}` : '/businesses'),
   getBusiness: (id) => request(`/businesses/${id}`),
   getBusinessSources: (id) => request(`/businesses/${id}/sources`),
 
@@ -93,7 +93,7 @@ export const api = {
     request(businessId ? `/sources?business_id=${businessId}` : '/sources'),
   getSource: (id) => request(`/sources/${id}`),
 
-  listDatasets: () => request('/datasets'),
+  listDatasets: (trust) => request(trust ? `/datasets?trust=${trust}` : '/datasets'),
   getDataset: (id) => request(`/datasets/${id}`),
   listBatches: (datasetId) =>
     request(datasetId ? `/batches?dataset_id=${datasetId}` : '/batches'),

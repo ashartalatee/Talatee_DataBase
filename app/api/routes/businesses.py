@@ -1,6 +1,7 @@
 import uuid
+from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
@@ -23,25 +24,45 @@ def list_business_categories():
 
 
 @router.get("", response_model=list[BusinessListItemOut])
-def list_businesses(db: Session = Depends(get_db)):
+def list_businesses(
+    trust: Literal["all", "trusted"] = Query("all"),
+    db: Session = Depends(get_db),
+):
     # Business yang di-trash TIDAK ikut muncul di sini sama sekali (bukan
     # cuma dikosongkan angkanya) -- lihat POST /businesses/{id}/trash.
     # Hitungan total_sources/total_datasets/total_records juga TIDAK boleh
     # ikut menghitung source/dataset/batch yang lagi di-trash, biar angka di
     # kartu business tidak "berbohong" padahal Source/Dataset-nya sudah
     # tidak bisa diklik (404).
+    #
+    # Parameter `trust`:
+    #   - "all" (default, perilaku lama): semua business tampil, dataset
+    #     yang belum TRUSTED tetap ikut dihitung.
+    #   - "trusted": hanya business yang punya >= 1 dataset TRUSTED yang
+    #     tampil, dan hitungannya (source/dataset/records) hanya dari
+    #     dataset TRUSTED itu. Business yang datanya baru masuk (masih
+    #     INGESTED / NEEDS_REVIEW) hanya terlihat di Eksperimen.
+    source_on = (Source.business_id == Business.id) & (Source.deleted_at.is_(None))
+    dataset_on = (Dataset.source_id == Source.id) & (Dataset.deleted_at.is_(None))
+    batch_on = (Batch.dataset_id == Dataset.id) & (Batch.deleted_at.is_(None))
+
+    query = db.query(
+        Business,
+        func.count(func.distinct(Source.id)),
+        func.count(func.distinct(Dataset.id)),
+        func.coalesce(func.sum(Batch.records_saved), 0),
+        func.count(func.distinct(case((Dataset.trust_status == "TRUSTED", Dataset.id), else_=None))),
+    ).filter(Business.deleted_at.is_(None))
+
+    if trust == "trusted":
+        dataset_on = dataset_on & (Dataset.trust_status == "TRUSTED")
+        # inner join: business tanpa dataset TRUSTED otomatis tersaring
+        query = query.join(Source, source_on).join(Dataset, dataset_on)
+    else:
+        query = query.outerjoin(Source, source_on).outerjoin(Dataset, dataset_on)
+
     rows = (
-        db.query(
-            Business,
-            func.count(func.distinct(Source.id)),
-            func.count(func.distinct(Dataset.id)),
-            func.coalesce(func.sum(Batch.records_saved), 0),
-            func.count(func.distinct(case((Dataset.trust_status == "TRUSTED", Dataset.id), else_=None))),
-        )
-        .filter(Business.deleted_at.is_(None))
-        .outerjoin(Source, (Source.business_id == Business.id) & (Source.deleted_at.is_(None)))
-        .outerjoin(Dataset, (Dataset.source_id == Source.id) & (Dataset.deleted_at.is_(None)))
-        .outerjoin(Batch, (Batch.dataset_id == Dataset.id) & (Batch.deleted_at.is_(None)))
+        query.outerjoin(Batch, batch_on)
         .group_by(Business.id)
         .order_by(Business.created_at.desc())
         .all()
