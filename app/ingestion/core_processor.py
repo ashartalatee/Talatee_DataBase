@@ -73,6 +73,7 @@ COLUMN_ALIASES = {
     "subtotal": "subtotal",
     "total": "subtotal",
     "status": "status_raw",
+    "transaction_ref": "transaction_ref",
 }
 
 
@@ -289,6 +290,17 @@ def _parse_batch(db: Session, batch: Batch) -> tuple[File, list[dict]]:
             values[field] = cell
 
         order_id = _clean_str(values.get("order_id"))
+        if order_id is None:
+            # Format ekspor toko sendiri: tidak ada order_id, tapi ada
+            # transaction_ref. Satu pesanan bisa punya beberapa baris produk,
+            # jadi kunci barisnya = transaction_ref + produk (satu baris item
+            # pesanan). Dengan begitu baris produk lain dalam pesanan yang
+            # sama tidak dianggap duplikat dan hilang, sementara upload ulang
+            # file yang diperbarui tetap menimpa baris yang sama.
+            ref = _clean_str(values.get("transaction_ref"))
+            if ref is not None:
+                produk = _clean_str(values.get("product_name"))
+                order_id = f"{ref}|{produk}" if produk else ref
         transaction_date = _parse_date(values.get("transaction_date"))
         subtotal = _parse_decimal(values.get("subtotal"))
         # Invalid = kolom tanggal/subtotal ADA di file (termapping) tapi
