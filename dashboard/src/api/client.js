@@ -92,6 +92,7 @@ export const api = {
   listSources: (businessId) =>
     request(businessId ? `/sources?business_id=${businessId}` : '/sources'),
   getSource: (id) => request(`/sources/${id}`),
+  listSourcesTrusted: () => request('/sources?trust=trusted'),
 
   listDatasets: (trust) => request(trust ? `/datasets?trust=${trust}` : '/datasets'),
   getDataset: (id) => request(`/datasets/${id}`),

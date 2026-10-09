@@ -1,12 +1,13 @@
 import uuid
-from typing import Optional
+from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import exists
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.security.dashboard_session import require_dashboard_session
-from app.models import Source
+from app.models import Dataset, Source
 from app.schemas.source import SourceOut
 from app.schemas.trash import DeletionLogOut, PurgeRequest
 from app.services import trash as trash_service
@@ -15,10 +16,32 @@ router = APIRouter(prefix="/sources", tags=["sources"], dependencies=[Depends(re
 
 
 @router.get("", response_model=list[SourceOut])
-def list_sources(business_id: Optional[uuid.UUID] = None, db: Session = Depends(get_db)):
+def list_sources(
+    business_id: Optional[uuid.UUID] = None,
+    trust: Literal["all", "trusted"] = Query("all"),
+    db: Session = Depends(get_db),
+):
+    """List source yang tidak di-trash.
+
+    Parameter `trust` (default "all" = perilaku lama, tidak merusak
+    pemanggil yang sudah ada):
+      - "trusted" -> hanya source yang punya >= 1 dataset TRUSTED (dan
+                     dataset itu sendiri tidak di-trash). Source yang
+                     datanya baru masuk (INGESTED / NEEDS_REVIEW) hanya
+                     terlihat di Eksperimen.
+      - "all"     -> semua source.
+    """
     query = trash_service.visible_sources_query(db)
     if business_id is not None:
         query = query.filter(Source.business_id == business_id)
+    if trust == "trusted":
+        query = query.filter(
+            exists().where(
+                (Dataset.source_id == Source.id)
+                & (Dataset.deleted_at.is_(None))
+                & (Dataset.trust_status == "TRUSTED")
+            )
+        )
     return query.order_by(Source.created_at.desc()).all()
 
 
