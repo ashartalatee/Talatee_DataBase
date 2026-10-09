@@ -141,6 +141,7 @@ def _process_dataset_impl(db: Session, dataset_id) -> dict:
         "duplicate_count": 0,
         "invalid_count": 0,
         "corrections_applied": 0,
+        "status_assumed_rows": 0,
         "batches_skipped": [],
         "duplicates_skipped": [],
     }
@@ -209,7 +210,7 @@ def _process_dataset_impl(db: Session, dataset_id) -> dict:
                         summary["corrections_applied"] += 1
                 # status_raw bisa dikoreksi -> is_revenue harus dihitung ulang,
                 # bukan dipakai dari hasil parsing RAW yang sudah usang.
-                row_values["is_revenue"] = _is_revenue_status(row_values["status_raw"])
+                row_values["is_revenue"] = (row_values["status_raw"] is None and row_values.get("status_assumed", False)) or _is_revenue_status(row_values["status_raw"])
 
             db.add(
                 CoreTransaction(
@@ -229,6 +230,8 @@ def _process_dataset_impl(db: Session, dataset_id) -> dict:
                 )
             )
             written += 1
+            if row_values.get("status_assumed"):
+                summary["status_assumed_rows"] += 1
 
         summary["batches_processed"] += 1
         summary["rows_total"] += len(parsed_rows)
@@ -278,6 +281,11 @@ def _parse_batch(db: Session, batch: Batch) -> tuple[File, list[dict]]:
         )
 
     parsed_rows = []
+    # Kolom status TIDAK ada sama sekali di file ini (misalnya ekspor toko
+    # sendiri): baris dianggap penjualan selesai, ditandai status_assumed, dan
+    # jumlahnya dilaporkan di ringkasan. Berlaku HANYA kalau kolomnya tidak ada,
+    # bukan kalau nilainya kosong atau tidak dikenali.
+    status_assumed = "status_raw" not in mapped_fields
     for raw_row in rows[1:]:
         if not any(c not in (None, "") for c in raw_row):
             continue  # baris kosong, lewati — tidak dihitung sama sekali
@@ -327,7 +335,8 @@ def _parse_batch(db: Session, batch: Batch) -> tuple[File, list[dict]]:
                 "unit_price": _parse_decimal(values.get("unit_price")),
                 "subtotal": subtotal,
                 "status_raw": _clean_str(values.get("status_raw")),
-                "is_revenue": _is_revenue_status(values.get("status_raw")),
+                "is_revenue": status_assumed or _is_revenue_status(values.get("status_raw")),
+                "status_assumed": status_assumed,
                 "invalid": row_invalid,
             }
         )
