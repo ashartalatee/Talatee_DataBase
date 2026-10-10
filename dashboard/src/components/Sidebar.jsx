@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutGrid,
+  Compass,
   FlaskConical,
   FolderKanban,
   Users,
@@ -10,6 +11,7 @@ import {
   ScrollText,
   Settings,
   UploadCloud,
+  Radio,
   X,
 } from 'lucide-react'
 
@@ -28,14 +30,20 @@ import {
 // /api/chat -- lihat pages/AIAnalyst.jsx), ditaruh dekat Hermes karena
 // dua-duanya soal AI. "Talatee Laboratorium" tetap "Eksperimen" (tabrakan
 // nama sama kolom "01 -- Laboratorium" di papan Proyek).
+//
+// "Showcase" = ruang kendali untuk Panggung (/stage). Panggung sendiri
+// TIDAK ditaut dari sini: ia dirender tanpa Sidebar (lihat App.jsx) dan
+// dibuka lewat tombol "Buka Panggung" di halaman Showcase.
 const NAV_ITEMS = [
-  { to: '/', label: 'Overview', icon: LayoutGrid, end: true },
+  { to: '/', label: 'Kompas', icon: Compass, end: true },
+  { to: '/overview', label: 'Overview', icon: LayoutGrid },
   { to: '/businesses', label: 'Clients', icon: Users },
   { to: '/data-explorer', label: 'Data Explorer', icon: Database },
   { to: '/proyek', label: 'Proyek', icon: FolderKanban },
   { to: '/laboratorium', label: 'Eksperimen', icon: FlaskConical },
   { to: '/ai-analyst', label: 'AI Analyst', icon: Bot },
   { to: '/hermes', label: 'Hermes', icon: Terminal },
+  { to: '/showcase', label: 'Showcase', icon: Radio },
   { to: '/jobs', label: 'Logs & Errors', icon: ScrollText },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]

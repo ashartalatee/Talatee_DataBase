@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar'
 import ComingSoon from './components/ComingSoon'
 import Login from './pages/Login'
 import Overview from './pages/Overview'
+import Kompas from './pages/Kompas'
 import Laboratorium from './pages/Laboratorium'
 import LabEntryDetail from './pages/LabEntryDetail'
 import Proyek from './pages/Proyek'
@@ -23,12 +24,18 @@ import Trash from './pages/Trash'
 import Hermes from './pages/Hermes'
 import SettingsPage from './pages/Settings'
 import AIAnalyst from './pages/AIAnalyst'
+import Stage from './pages/Stage'
+import ShowcaseControl from './pages/ShowcaseControl'
 
 // Halaman /login dirender BERDIRI SENDIRI (full-screen, tanpa Sidebar) --
 // beda dari semua halaman lain yang selalu dibungkus layout Sidebar+main.
 // Dipisah lewat useLocation() di sini, bukan direstrukturisasi total ke pola
 // nested-route+Outlet, supaya semua <Route> yang sudah ada di bawah tidak
 // perlu diubah sama sekali.
+//
+// /stage (Panggung) memakai pola yang sama: berdiri sendiri, tanpa Sidebar
+// dan tanpa nama "Talatee", karena itu yang dibagikan ke penonton. Ruang
+// kendalinya ada di /showcase (di dalam layout Sidebar, entri "Showcase").
 function AppShell() {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -39,6 +46,15 @@ function AppShell() {
   useEffect(() => {
     setSidebarOpen(false)
   }, [location.pathname])
+
+  // Garis miring di akhir alamat ("/stage/") diabaikan supaya tetap dikenali.
+  if (location.pathname.replace(/\/+$/, '') === '/stage') {
+    return (
+      <Routes>
+        <Route path="/stage" element={<Stage />} />
+      </Routes>
+    )
+  }
 
   if (location.pathname === '/login') {
     return (
@@ -70,7 +86,8 @@ function AppShell() {
           <main className="flex-1 overflow-y-auto px-4 md:px-8 py-4 md:py-8">
             <div className="max-w-6xl mx-auto">
             <Routes>
-              <Route path="/" element={<Overview />} />
+              <Route path="/" element={<Kompas />} />
+              <Route path="/overview" element={<Overview />} />
               <Route path="/laboratorium" element={<Laboratorium />} />
               <Route path="/laboratorium/:id" element={<LabEntryDetail />} />
               <Route path="/proyek" element={<Proyek />} />
@@ -87,6 +104,7 @@ function AppShell() {
               <Route path="/storage" element={<Storage />} />
               <Route path="/trash" element={<Trash />} />
               <Route path="/hermes" element={<Hermes />} />
+              <Route path="/showcase" element={<ShowcaseControl />} />
 
               {/* Bagian yang masih di peta visi, belum dibangun beneran —
                   lihat TALATEE_CONTROL_CENTER.md untuk rencana lengkapnya. */}
