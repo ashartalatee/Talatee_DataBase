@@ -56,3 +56,8 @@ def delete_file(storage_path: str) -> None:
     object sudah tidak ada), jadi aman dipanggil ulang kalau percobaan
     sebelumnya gagal di tengah jalan."""
     _client.remove_object(settings.minio_bucket, storage_path)
+
+
+def ping() -> None:
+    """Cek koneksi ke MinIO tanpa mengubah apa pun (status kesehatan Showcase)."""
+    _client.bucket_exists(settings.minio_bucket)
