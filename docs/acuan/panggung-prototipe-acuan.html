@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Talatee Skincare · Panggung</title>
+<style>
+:root{--bg:#050a07;--panel:#0b120e;--line:#1b2c21;--tx:#e8f3ec;--mut:#7d9487;--g:#22ff66;--y:#f5c542;--b:#4da3ff;--r:#ff6b6b;--p:#a77bff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:22px 18px 36px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-size:28px;font-weight:600}
+.sub{color:var(--mut);margin:2px 0 0}
+.tags{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tag{border:1px solid var(--line);border-radius:99px;padding:3px 12px;font-size:12px;color:var(--mut)}
+.tag.live{color:var(--g);border-color:#1d5a33}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--g);margin-right:6px;animation:bl 1.6s infinite}
+@keyframes bl{50%{opacity:.25}}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0;align-items:center}
+button{background:var(--panel);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:7px 13px;font:inherit;font-size:13px;cursor:pointer}
+button.pri{background:var(--g);color:#03140a;border-color:var(--g);font-weight:600}
+button:hover{border-color:var(--g)}
+label{font-size:13px;color:var(--mut);display:flex;gap:6px;align-items:center}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
+.fs{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 13px;position:relative;transition:.3s}
+.fs.pulse{border-color:var(--g);box-shadow:0 0 18px #22ff6633}
+.fs b{font-size:12.5px;font-weight:600;display:block}
+.fs small{color:var(--mut);font-size:11px}
+.fs .n{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.fs:not(:last-child)::after{content:"→";position:absolute;right:-10px;top:50%;transform:translateY(-50%);color:#2c5a3c;z-index:2;background:var(--bg);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.kpi,.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px;min-width:0}
+.kpi small{color:var(--mut)}
+.kpi .v{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;margin:2px 0}
+.kpi .d{font-size:12px;color:var(--mut)}
+.main{display:grid;grid-template-columns:1fr 340px;gap:12px}
+.left,.right{display:grid;gap:12px;align-content:start;min-width:0}
+.two{display:grid;grid-template-columns:1.5fr 1fr;gap:12px}
+h2{margin:0 0 10px;font-size:14px;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.seg button{padding:3px 10px;font-size:12px;border-radius:6px}
+.seg button.on{border-color:var(--g);color:var(--g)}
+svg{display:block;width:100%;height:auto}
+.donutwrap{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.leg{flex:1;min-width:130px;font-size:13px}
+.leg div{display:flex;align-items:center;gap:7px;color:var(--mut);padding:2px 0}
+.leg b{margin-left:auto;color:var(--tx);font-variant-numeric:tabular-nums}
+.sw{width:9px;height:9px;border-radius:3px;flex:none}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:#121c16;margin:4px 0 10px}
+.bar i{display:block;transition:width .6s}
+.chat{display:flex;flex-direction:column;gap:8px}
+.msgs{max-height:300px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.m{padding:8px 11px;border-radius:10px;font-size:13px;max-width:96%}
+.m.u{align-self:flex-end;background:#12301d;border:1px solid #1d5a33}
+.m.h{background:#0f1812;border:1px solid var(--line)}
+.chip{display:inline-block;font:11px ui-monospace,Menlo,Consolas,monospace;color:var(--g);border:1px solid #1d5a33;border-radius:5px;padding:0 6px;margin:0 4px 4px 0}
+.src{font-size:11.5px;color:var(--mut);margin-top:4px}
+.sugs{display:flex;gap:6px;flex-wrap:wrap}
+.sugs button{font-size:12px;padding:4px 10px;border-radius:99px;color:var(--g);border-color:#1d5a33}
+.ask{display:flex;gap:6px}
+input[type=text]{flex:1;background:#08100b;color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;min-width:0}
+.feed{list-style:none;margin:0;padding:0;max-height:210px;overflow:auto}
+.feed li{display:flex;gap:9px;padding:6px 0;border-bottom:1px solid #121c16;font-size:12.5px}
+.feed time{color:var(--mut);font-size:11.5px;width:58px;flex:none}
+.g{color:var(--g)}.b{color:var(--b)}.y{color:var(--y)}
+.stat{display:flex;justify-content:space-between;padding:5px 0;font-size:13px}
+.stat span:last-child{color:var(--g)}
+.note{font-size:12px;color:var(--mut)}
+.empty{color:#6a8072}
+.bad{color:var(--r)}
+.rb{display:grid;grid-template-columns:120px 1fr auto;gap:8px;align-items:center;font-size:12.5px;padding:3px 0}
+.rt{height:8px;background:#121c16;border-radius:4px;overflow:hidden}.rt i{display:block;height:100%;transition:width .6s}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.chips button{font-size:12px;padding:4px 11px;border-radius:99px}.chips button.on{border-color:var(--g);color:var(--g)}
+.cl{border:1px solid #1d5a33;background:#08140d;border-radius:10px;padding:12px;margin-top:12px}
+.live-mode .controls .hl,.live-mode .feedp,.live-mode .statp,.live-mode .note{display:none}
+.live-mode .main{grid-template-columns:1fr 380px}.live-mode h1{font-size:38px}.live-mode .kpi .v{font-size:34px}body.live-mode{font-size:16px}
+.up{border:1px dashed #2c5a3c;border-radius:12px;padding:14px;background:#08100b;transition:.2s}
+.up.drag{border-color:var(--g);background:#0c1a11}
+.up button{margin:2px 4px 2px 0}
+.tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;display:block;overflow-x:auto}
+.tbl th,.tbl td{padding:4px 10px;border-bottom:1px solid #121c16;text-align:left;white-space:nowrap}
+.tbl th{color:var(--mut);font-weight:500}
+.chk{list-style:none;margin:10px 0 0;padding:0;font-size:12.5px}
+.chk li{padding:1px 0}
+.prog{height:8px;background:#121c16;border-radius:4px;overflow:hidden;margin-top:10px}
+.prog i{display:block;height:100%;width:0;background:var(--g);transition:width .15s}
+.gd{position:fixed;inset:0;display:none;z-index:50}.gd.open{display:block}
+.gbk{position:absolute;inset:0;background:#000b}
+.gp{position:absolute;top:0;right:0;bottom:0;width:min(980px,100%);background:var(--bg);border-left:1px solid var(--line);overflow:auto;padding:calc(18px + env(safe-area-inset-top,0px)) 18px calc(18px + env(safe-area-inset-bottom,0px))}
+.gh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}
+.gt{display:flex;gap:6px;margin-bottom:12px}.gt button.on{border-color:var(--g);color:var(--g)}
+.gl{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;margin-top:12px}
+table.fl{width:100%;border-collapse:collapse;font-size:12.5px}
+.fl th,.fl td{padding:7px 8px;border-bottom:1px solid #121c16;text-align:left;white-space:nowrap}
+.fl th{color:var(--mut);font-weight:500}
+.fl tr.r{cursor:pointer}.fl tr.r:hover,.fl tr.s{background:#0f1812}
+.pill{font-size:11px;padding:1px 8px;border-radius:99px;border:1px solid}
+.fm{display:grid;gap:9px}.fm label{display:grid;gap:3px;font-size:12.5px;color:var(--mut)}
+input[type=password],select{background:#08100b;color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;width:100%}
+input[type=text]{width:100%}
+.cn{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+@media(max-width:800px){.gl{grid-template-columns:1fr}}
+button:focus-visible,input:focus-visible,select:focus-visible,tr.r:focus-visible{outline:2px solid var(--g);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.foot{margin-top:18px;font-size:12px;color:var(--mut);border-top:1px solid var(--line);padding-top:12px}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#12301d;border:1px solid #1d5a33;padding:8px 14px;border-radius:10px;font-size:13px;z-index:60;display:none;max-width:90%}
+@media(max-width:900px){.main,.two{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.flow{grid-template-columns:1fr 1fr}.fs::after{display:none}}
+</style></head>
+<body><div class="wrap">
+<header>
+ <div><h1>Talatee Skincare</h1><p class="sub">Panggung data terpusat: penjualan, stok, dan marketing dari semua channel dalam satu layar.</p></div>
+ <div class="tags"><span class="tag live"><span class="dot"></span>Live</span><span class="tag">Data demo</span><span class="tag">Simulasi lokal</span></div>
+</header>
+<div class="controls">
+ <button class="pri hl" id="bTx">Kirim transaksi demo</button>
+ <label class="hl"><input type="checkbox" id="auto"> Otomatis</label>
+ <button class="hl" id="bReset">Reset demo</button>
+ <button id="bGd">Gudang data</button>
+ <button id="bLive">Mode siaran</button>
+ <span class="note">Semua angka di bawah dihitung dari satu sumber data demo yang sama.</span>
+</div>
+
+<section class="flow" id="flow"></section>
+<section class="kpis" id="kpis"></section>
+
+<div class="main">
+ <div class="left">
+  <div class="panel">
+   <h2>Tren penjualan <span class="seg" id="seg"><button data-d="7">7H</button><button data-d="30" class="on">30H</button></span></h2>
+   <div id="chart"></div>
+  </div>
+  <div class="two">
+   <div class="panel"><h2>Produk terlaris <span class="note">30 hari</span></h2><div class="donutwrap" id="donut"></div></div>
+   <div class="panel"><h2>Dari baru masuk ke terpercaya</h2><div class="bar" id="bar"></div><div class="leg" id="tleg"></div></div>
+  </div>
+  <div class="two">
+   <div class="panel"><h2>Omzet per channel <span class="note">30 hari</span></h2><div id="chanP"></div></div>
+   <div class="panel"><h2>Stok menipis</h2><div id="stokP"></div></div>
+  </div>
+  <div class="panel"><h2>Kampanye marketing</h2><div id="mktP" style="overflow-x:auto"></div></div>
+ </div>
+ <div class="right">
+  <div class="panel chat">
+   <h2>Tanya ke Hermes <span class="note">hanya membaca</span></h2>
+   <div class="msgs" id="msgs"><div class="m h">Saya menjawab dari data yang sudah terpercaya. Coba salah satu pertanyaan di bawah.</div></div>
+   <div class="sugs" id="sugs"></div>
+   <div class="ask"><input type="text" id="inp" placeholder="Tulis pertanyaan…"><button class="pri" id="bAsk">Kirim</button></div>
+  </div>
+  <div class="panel feedp"><h2>Aktivitas terbaru</h2><ul class="feed" id="feed"></ul></div>
+  <div class="panel statp"><h2>Status sistem <span class="note">simulasi</span></h2>
+   <div class="stat"><span>PostgreSQL</span><span>Online</span></div>
+   <div class="stat"><span>Hermes (MCP, baca saja)</span><span>Online</span></div>
+   <div class="stat"><span>Upload &amp; penyimpanan</span><span>Online</span></div>
+  </div>
+ </div>
+</div>
+<p class="foot">Talatee Skincare adalah brand demo. Seluruh angka di halaman ini adalah data demo yang dibangkitkan di browser, bukan data bisnis nyata. Alur yang diperagakan (unggah, validasi, verifikasi, tanya Hermes) mengikuti cara kerja sistem sebenarnya.</p>
+</div>
+
+<div id="gd" class="gd" role="dialog" aria-modal="true" aria-label="Gudang data"><div class="gbk" id="gbk"></div><aside class="gp">
+ <div class="gh"><div><b style="font-size:18px">Gudang data</b><div class="note">Semua file dan koneksi data tersimpan di sini</div></div><button id="gx">Tutup</button></div>
+ <div class="gt"><button data-t="file" class="on">File</button><button data-t="api">Hubungkan API</button></div>
+ <div id="gb"></div>
+</aside></div>
+<div id="toast" class="toast" role="status"></div>
+<script>
+const CATS=[["Skincare",.32,"#22ff66"],["Makeup",.22,"#4da3ff"],["Perawatan Rambut",.16,"#a77bff"],["Body Care",.13,"#f5c542"],["Lainnya",.17,"#7d9487"]];
+const CH=[["TikTok Shop",.36,"#22ff66"],["Shopee",.30,"#4da3ff"],["Lazada",.17,"#a77bff"],["WhatsApp",.10,"#f5c542"],["Website",.07,"#7d9487"]];
+const PQ={"Serum Vitamin C":310,"Moisturizer Gel":260,"Sunscreen SPF50":240,"Lip Cream Matte":180,"Cushion Foundation":95,"Shampoo Anti Ketombe":170,"Hair Serum":120,"Body Lotion":200,"Body Scrub":140,"Tote Bag Polos":90};
+const TR=[["INGESTED","Baru masuk","#4da3ff"],["VALIDATING","Divalidasi","#f5c542"],["NEEDS_REVIEW","Perlu ditinjau","#ff6b6b"],["TRUSTED","Terpercaya","#22ff66"]];
+const $=id=>document.getElementById(id);
+let D,P,feed,prev={},timer,range=30,nb,gen=0;const bump=[];
+
+function seed(){
+ const days=[],cats={};CATS.forEach(c=>cats[c[0]]=0);
+ for(let i=0;i<30;i++){
+  const rev=Math.round(2.4e6+i*38000+Math.sin(i*.9)*3.6e5+Math.cos(i*2.3)*1.5e5)*(i===29?.42:1);
+  days.push({rev:Math.round(rev),ord:Math.round(rev/28000)});
+  CATS.forEach(c=>cats[c[0]]+=Math.round(rev*c[1]));
+ }
+ return{days,cats};
+}
+function fresh(){gen++;D=seed();{let t=0;D.days.forEach(d=>t+=d.rev);D.chan={};CH.forEach(c=>D.chan[c[0]]=Math.round(t*c[1]))}D.prod=Object.assign({},PQ);D.stok=[];D.mkt={};D.kat=new Map();P={file:{c:0,t:null},batch:{c:0,t:null},tr:{INGESTED:0,VALIDATING:0,NEEDS_REVIEW:0,TRUSTED:0,t:null},q:{c:0,t:null},a:{c:0,t:null}};feed=[];prev={};nb=0;}
+fresh();
+
+const rp=v=>v>=1e6?"Rp "+(v/1e6).toFixed(2).replace(".",",")+" jt":"Rp "+Math.round(v/1000)+" rb";
+const sum=(a,k)=>a.reduce((n,x)=>n+x[k],0);
+function ago(t){if(!t)return"—";const s=Math.max(0,(Date.now()-t)/1000|0);return s<5?"baru saja":s<60?s+" dtk":s<3600?(s/60|0)+" mnt":(s/3600|0)+" jam";}
+function log(text,tone){feed.unshift({t:Date.now(),text,tone});feed=feed.slice(0,30);}
+
+/* ---------- alur data (simulasi) ---------- */
+function sim(){const n=12+(Math.random()*14|0),rev=n*(26000+Math.random()*8000|0),cats={};CATS.forEach(c=>cats[c[0]]=Math.round(rev*(c[1]+(Math.random()-.5)*.06)));const byChan={};CH.forEach(c=>byChan[c[0]]=Math.round(rev*c[1]));return{n,rev,cats,byChan,byDay:{29:{rev,n}}}}
+function apply(b){for(const i in b.byDay){const d=D.days[i];d.rev+=b.byDay[i].rev;d.ord+=b.byDay[i].n}for(const k in b.cats)D.cats[k]=(D.cats[k]||0)+b.cats[k];for(const k in(b.byChan||{}))D.chan[k]=(D.chan[k]||0)+b.byChan[k];for(const k in(b.byProd||{}))D.prod[k]=(D.prod[k]||0)+b.byProd[k]}
+const T=(g,f,ms)=>setTimeout(()=>{if(g===gen)f()},ms);
+function tx(){const g=gen;
+ P.file.c++;P.file.t=Date.now();log("File transaksi masuk","g");render();
+ T(g,()=>{const id=++nb;P.batch.c++;P.batch.t=Date.now();P.tr.INGESTED++;P.tr.t=Date.now();log("Batch #"+id+" tercatat","b");render();
+  T(g,()=>{P.tr.INGESTED--;P.tr.VALIDATING++;P.tr.t=Date.now();log("Batch #"+id+" divalidasi","y");render();
+   T(g,()=>{const ok=Math.random()>.12;P.tr.VALIDATING--;P.tr[ok?"TRUSTED":"NEEDS_REVIEW"]++;P.tr.t=Date.now();
+    if(ok){const b=sim();apply(b);log("Batch #"+id+" terpercaya: +"+b.n+" order ("+rp(b.rev)+")","g")}else log("Batch #"+id+" perlu ditinjau, belum dihitung","y");render()},1700);
+  },1300);},700);
+}
+
+/* ---------- gudang data ---------- */
+let files=[],conns=[],sel=null,fid=0,tab="file",known=new Set(),fm={name:"",type:"REST API (JSON)",url:"",key:"",msg:""};
+const ST={INGESTED:["Baru masuk","#4da3ff"],VALIDATING:["Siap diverifikasi","#f5c542"],NEEDS_REVIEW:["Perlu ditinjau","#ff6b6b"],TRUSTED:["Terpercaya","#22ff66"],UPLOAD:["Mengunggah","#7d9487"],REPLACED:["Digantikan","#7d9487"]};
+let cl={fid:null,recalc:false,res:null},dom="Semua";
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const kb=n=>n<1024?n+" B":(n/1024).toFixed(1)+" KB";
+const day=o=>{const d=new Date(Date.now()-o*864e5);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+function parseCSV(t){const out=[];t.replace(/\r/g,"").split("\n").forEach(l=>{if(!l.trim())return;const r=[];let c="",q=false;for(const ch of l){if(ch==='"')q=!q;else if(ch===","&&!q){r.push(c);c=""}else c+=ch}r.push(c);out.push(r)});return out}
+const PR=[["Serum Vitamin C","Skincare",89000],["Moisturizer Gel","Skincare",75000],["Sunscreen SPF50","Skincare",69000],["Lip Cream Matte","Makeup",55000],["Cushion Foundation","Makeup",99000],["Shampoo Anti Ketombe","Perawatan Rambut",48000],["Hair Serum","Perawatan Rambut",62000],["Body Lotion","Body Care",52000],["Body Scrub","Body Care",45000],["Tote Bag Polos","Lainnya",35000]];
+function sample(seed,d,n,pre){
+ let s=seed;const r=()=>(s=(s*1103515245+12345)%2147483648)/2147483648,ch=["TikTok Shop","Shopee","Website"];
+ let o="tanggal,waktu,channel,transaction_ref,produk,kategori,qty,harga_satuan,subtotal\n";
+ for(let i=1;i<=n;i++){const p=PR[r()*PR.length|0],q=[1,1,1,2,2,3][r()*6|0];o+=d+","+String(9+(i>>2)%12).padStart(2,"0")+":"+String(i*7%60).padStart(2,"0")+","+ch[r()*3|0]+","+pre+"-"+(1000+i)+","+p[0]+","+p[1]+","+q+","+p[2]+","+q*p[2]+"\n"}
+ return o;
+}
+const REASON={dup:"baris ganda / sudah pernah masuk",date:"tanggal tidak valid",future:"tanggal di masa depan",old:"di luar 30 hari terakhir",cancel:"dibatalkan / retur",qty:"qty tidak valid",sub:"subtotal tidak valid",outlier:"nilai tidak masuk akal",mismatch:"subtotal ≠ qty × harga",stok:"stok tidak valid",funnel:"angka kampanye tidak masuk akal",biaya:"biaya tidak valid",harga:"harga tidak valid"};
+const DOMS=["Penjualan","Stok","Marketing","Katalog"];
+const CANCEL=/^(batal|dibatalkan|cancel|cancelled|canceled|retur|return|returned|refund|gagal)$/i,RPFMT=/rp|^\d{1,3}(\.\d{3})+/i;
+const ALIAS={no_pesanan:"transaction_ref",order_id:"transaction_ref",id_pesanan:"transaction_ref",nama_produk:"produk",product_name:"produk",jumlah:"qty",quantity:"qty",total_harga:"subtotal",total:"subtotal",order_amount:"subtotal",waktu_pesanan:"tanggal",tanggal_pesanan:"tanggal",status_pesanan:"status",order_status:"status",harga:"harga_satuan",kategori_produk:"kategori",nama_kampanye:"kampanye",campaign:"kampanye",biaya_iklan:"biaya",spend:"biaya",impresi:"tayangan",impressions:"tayangan",clicks:"klik",stok_tersedia:"stok",stock:"stok",kode_sku:"sku",tgl_kedaluwarsa:"kedaluwarsa",expired:"kedaluwarsa"};
+const canonName=x=>{x=x.trim().toLowerCase().replace(/[\s.]+/g,"_");return ALIAS[x]||x};
+function chanName(s){s=String(s||"").toLowerCase();return/tiktok/.test(s)?"TikTok Shop":/shopee/.test(s)?"Shopee":/lazada/.test(s)?"Lazada":/whatsapp/.test(s)||/(^|[^a-z])wa([^a-z]|$)/.test(s)?"WhatsApp":/website|web/.test(s)?"Website":null}
+function num(s){s=String(s==null?"":s).replace(/rp|\s/gi,"");if(s==="")return NaN;if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s))s=s.replace(/\./g,"").replace(",",".");else if(/^\d+,\d+$/.test(s))s=s.replace(",",".");return /^-?\d+(\.\d+)?$/.test(s)?+s:NaN}
+function pdate(s){let m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s),y,mo,d;if(m){y=+m[1];mo=+m[2];d=+m[3]}else if((m=/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/.exec(s))){d=+m[1];mo=+m[2];y=+m[3]}else return null;const t=new Date(y,mo-1,d);return t.getFullYear()===y&&t.getMonth()===mo-1&&t.getDate()===d?t:null}
+function analyze(text,name){
+ const t=parseCSV(text);
+ const base={rows:[],h:[],note:[],total:0,miss:[],q:{},fix:{},counted:0,pass:0,n:0,rev:0,cats:{},byDay:{},byChan:{},byProd:{},mkt:{},payload:[],keys:[],mapped:[],channel:null};
+ if(t.length<2||text.includes("\0"))return Object.assign(base,{kind:"Tidak terbaca"});
+ const raw=t[0].map(x=>x.trim()),h=raw.map(canonName),mapped=raw.map((x,i)=>({from:x,to:h[i]})).filter(m=>m.from.toLowerCase()!==m.to);
+ const rows=t.slice(1).map(r=>{const o={};h.forEach((k,i)=>o[k]=(r[i]||"").trim());return o}),has=k=>h.includes(k);
+ const kind=["transaction_ref","produk","kategori","qty","subtotal"].every(has)?"Penjualan":has("produk")&&has("stok")?"Stok":has("kampanye")&&has("biaya")?"Marketing":has("sku")&&has("produk")&&has("harga_satuan")?"Katalog":"Data lain";
+ const fch=chanName(name),a=Object.assign(base,{h,rows,total:rows.length,pass:1,mapped,kind,channel:fch||(has("channel")?"Per baris":null),nostatus:!has("status"),nodate:!has("tanggal")});
+ if(kind==="Data lain")return a;
+ const today=new Date();today.setHours(0,0,0,0);
+ const skip=(i,why)=>{a.q[why]=(a.q[why]||0)+1;a.note[i]=REASON[why]};
+ const dayIdx=o=>{const dt=pdate(o.tanggal);if(!dt)return"date";const ago=Math.round((today-dt)/864e5);return ago<0?"future":ago>29?"old":29-ago};
+ const seen=new Set(),ids=new Set();
+ rows.forEach((o,i)=>{
+  if(kind==="Penjualan"){
+   const k=o.transaction_ref+"|"+o.produk;
+   if(seen.has(k)||known.has(k))return skip(i,"dup");seen.add(k);
+   let di=29;
+   if(!a.nodate){const d=dayIdx(o);if(typeof d==="string")return skip(i,d);di=d}
+   if(!a.nostatus&&CANCEL.test(o.status))return skip(i,"cancel");
+   const qty=num(o.qty);if(!(Number.isInteger(qty)&&qty>=1))return skip(i,"qty");
+   const sub=num(o.subtotal);if(!(sub>=0))return skip(i,"sub");
+   if(sub>5e6)return skip(i,"outlier");
+   if(o.harga_satuan){const hg=num(o.harga_satuan);if(!isNaN(hg)&&Math.abs(qty*hg-sub)>1)return skip(i,"mismatch")}
+   let c=(o.kategori||"").trim();const m=CATS.find(x=>x[0].toLowerCase()===c.toLowerCase());
+   if(m){if(m[0]!==c)a.fix.catCase=(a.fix.catCase||0)+1;c=m[0]}else{a.fix.catUnk=(a.fix.catUnk||0)+1;c="Lainnya"}
+   if(RPFMT.test(o.subtotal)||RPFMT.test(o.harga_satuan||""))a.fix.numFix=(a.fix.numFix||0)+1;
+   if(D.kat.size&&!D.kat.has(o.produk.toLowerCase()))a.fix.prodUnk=(a.fix.prodUnk||0)+1;
+   const ch=chanName(o.channel)||fch||"Lainnya";
+   ids.add(o.transaction_ref);a.keys.push(k);a.rev+=sub;a.cats[c]=(a.cats[c]||0)+sub;a.byChan[ch]=(a.byChan[ch]||0)+sub;a.byProd[o.produk]=(a.byProd[o.produk]||0)+qty;a.counted++;
+   const b=a.byDay[di]||(a.byDay[di]={rev:0,ids:new Set()});b.rev+=sub;b.ids.add(o.transaction_ref);
+  }else if(kind==="Stok"){
+   const k=(o.sku||o.produk).toLowerCase();if(seen.has(k))return skip(i,"dup");seen.add(k);
+   const st=num(o.stok);if(!(Number.isInteger(st)&&st>=0))return skip(i,"stok");
+   let expired=false;if(o.kedaluwarsa){const ex=pdate(o.kedaluwarsa);if(!ex)return skip(i,"date");expired=ex<today}
+   if(expired)a.fix.expired=(a.fix.expired||0)+1;
+   a.payload.push({produk:o.produk,sku:o.sku||"",stok:st,exp:o.kedaluwarsa||"",expired});a.counted++;
+  }else if(kind==="Marketing"){
+   if(!a.nodate){const d=dayIdx(o);if(typeof d==="string")return skip(i,d)}
+   const ch=chanName(o.channel)||fch||"Lainnya",k="M|"+o.tanggal+"|"+o.kampanye+"|"+ch;
+   if(seen.has(k)||known.has(k))return skip(i,"dup");seen.add(k);
+   const bi=num(o.biaya);if(!(bi>=0))return skip(i,"biaya");
+   const ty=num(o.tayangan||"0"),kl=num(o.klik||"0"),od=num(o.order||"0"),om=num(o.omzet||"0");
+   if([ty,kl,od,om].some(v=>!(v>=0))||kl>ty||od>kl)return skip(i,"funnel");
+   const key=o.kampanye+"|"+ch,m=a.mkt[key]||(a.mkt[key]={kampanye:o.kampanye,channel:ch,biaya:0,tayangan:0,klik:0,order:0,omzet:0});
+   m.biaya+=bi;m.tayangan+=ty;m.klik+=kl;m.order+=od;m.omzet+=om;a.keys.push(k);a.counted++;
+  }else{
+   const k=(o.sku||"").toLowerCase();if(!k||seen.has(k))return skip(i,"dup");seen.add(k);
+   const hg=num(o.harga_satuan);if(!(hg>0))return skip(i,"harga");
+   a.payload.push({sku:o.sku,produk:o.produk,kategori:o.kategori||"",harga:hg});a.counted++;
+  }
+ });
+ if(kind==="Penjualan"){a.n=ids.size;for(const i in a.byDay)a.byDay[i]={rev:a.byDay[i].rev,n:a.byDay[i].ids.size}}
+ {const den=a.total-(a.q.cancel||0);a.pass=den>0?a.counted/den:1}
+ return a;
+}
+function checksFor(f){
+ const pc=Math.round(f.pass*100),cls=pc>=90?"g":pc>=70?"y":"bad",den=f.clean?f.clean.base:f.total-(f.q.cancel||0),x=f.fix,L=[`<li class="${cls}">${pc>=90?"✓":"⚠"} ${f.counted} dari ${den} baris ${f.clean?"layak ":""}lolos (${pc}%)</li>`];
+ if(f.mapped.length)L.push(`<li class="g">✓ ${f.mapped.length} kolom dipetakan otomatis (adapter): ${esc(f.mapped.slice(0,4).map(m=>m.from+" → "+m.to).join(", "))}${f.mapped.length>4?", …":""}</li>`);
+ for(const k in f.q)L.push(`<li class="y">⚠ ${f.q[k]} baris dilewati: ${REASON[k]}</li>`);
+ if(f.q.cancel)L.push(`<li class="note">ℹ Baris batal/retur tidak dihitung sebagai kegagalan</li>`);
+ if(x.catCase)L.push(`<li class="g">✓ ${x.catCase} baris: huruf kategori dirapikan</li>`);
+ if(x.numFix)L.push(`<li class="g">✓ ${x.numFix} baris: format angka (Rp / titik) dibaca ulang</li>`);
+ if(x.catUnk)L.push(`<li class="y">ℹ ${x.catUnk} baris kategori tidak dikenal masuk "Lainnya"</li>`);
+ if(x.prodUnk)L.push(`<li class="y">⚠ ${x.prodUnk} baris: produk tidak ada di katalog SKU</li>`);
+ if(x.expired)L.push(`<li class="y">⚠ ${x.expired} baris stok sudah kedaluwarsa (tidak dihitung sebagai stok tersedia)</li>`);
+ if(f.kind==="Penjualan"){if(f.nodate)L.push(`<li class="note">ℹ Tanpa kolom tanggal: semua dihitung sebagai hari ini</li>`);if(f.nostatus)L.push(`<li class="note">ℹ Tanpa kolom status: pesanan batal tidak bisa disaring</li>`)}
+ const last=f.kind==="Penjualan"?`${f.n} order · ${rp(f.rev)} akan dihitung`:f.kind==="Stok"?`${f.payload.length} SKU akan memperbarui data stok`:f.kind==="Marketing"?`${Object.keys(f.mkt).length} kampanye akan ditambahkan`:`${f.payload.length} SKU induk akan dicatat`;
+ L.push(pc<70?`<li class="bad">✗ Terlalu banyak baris bermasalah (batas 70%). Perbaiki file lalu unggah ulang.</li>`:`<li>${last}</li>`);
+ return L.join("");
+}
+const blockedF=f=>DOMS.includes(f.kind)&&!f.dupOf&&f.pass<.7;
+function dirty(level){
+ const n=level===1?40:30,L=sample(level===1?21:33,day(3),n,"D"+level).trim().split("\n");
+ const head=L.shift()+",status",R=L.map(l=>l.split(",").concat("selesai")),set=(i,c,v)=>{R[i][c]=v},fm=v=>String(v).replace(/\B(?=(\d{3})+(?!\d))/g,"."),extra=[];
+ if(level===1){extra.push(R[3].slice(),R[10].slice());set(5,0,"2099-01-01");set(7,8,String(+R[7][8]+25000));set(12,5,R[12][5].toLowerCase());set(13,5,R[13][5].toUpperCase());[15,16].forEach(i=>{set(i,7,"Rp "+fm(R[i][7]));set(i,8,"Rp "+fm(R[i][8]))});set(20,9,"batal");set(21,9,"retur")}
+ else{[0,1,2,3].forEach(i=>set(i,8,String(+R[i][8]+15000)));set(4,6,"0");set(5,6,"-1");set(6,6,"abc");set(7,0,"bukan-tanggal");set(8,0,"2099-01-01");set(9,0,day(90));set(10,6,"1");set(10,7,"99999999");set(10,8,"99999999");set(11,8,"");set(12,8,"");[13,14,15].forEach(i=>set(i,9,i===15?"retur":"batal"));set(16,5,"Elektronik");extra.push(R[18].slice(),R[19].slice())}
+ return[head,...R.concat(extra).map(r=>r.join(","))].join("\n")+"\n";
+}
+function hash(t){let h=5381;for(let i=0;i<t.length;i++)h=(h*33^t.charCodeAt(i))>>>0;return h+":"+t.length}
+function addFile(name,text,src,opt){const g=gen;
+ const hs=hash(text),same=files.find(x=>x.hash===hs),f=Object.assign({id:++fid,name,src,hash:hs,dupOf:same?same.name:null,size:text.length,t:Date.now(),status:"UPLOAD"},analyze(text,name));
+ if(opt&&opt.clean){f.clean=opt.clean;f.pass=f.counted/opt.clean.base}
+ if(!f.dupOf)(f.keys||[]).forEach(k=>known.add(k));
+ files.unshift(f);sel=f.id;if(!(opt&&opt.derived)){P.file.c++;P.file.t=Date.now();log("File "+name+" masuk","g")}render();rg();
+ T(g,()=>{P.batch.c++;P.batch.t=Date.now();P.tr.t=Date.now();
+  if(f.kind==="Tidak terbaca"||f.dupOf){P.tr.NEEDS_REVIEW++;f.status="NEEDS_REVIEW";log(name+(f.dupOf?" duplikat dari "+f.dupOf+", tidak dihitung":" tidak terbaca"),"y")}
+  else{P.tr.INGESTED++;f.status="INGESTED";log("Batch dari "+name+" tercatat","b");
+   T(g,()=>{P.tr.INGESTED--;P.tr.t=Date.now();
+    if(blockedF(f)){const pc=Math.round(f.pass*100);P.tr.NEEDS_REVIEW++;f.status="NEEDS_REVIEW";f.held=true;log(name+" ditahan: hanya "+pc+"% baris lolos, tidak dihitung","y");toast(name+" ditahan di Gudang: hanya "+pc+"% baris lolos")}
+    else{P.tr.VALIDATING++;f.status="VALIDATING";log(name+" divalidasi, menunggu verifikasi","y")}
+    render();rg()},900)}
+  render();rg()},600);
+}
+function applyDomain(f){
+ if(f.kind==="Penjualan"){apply(f);return f.name+" terpercaya: +"+f.n+" order ("+rp(f.rev)+")"}
+ if(f.kind==="Stok"){const m=new Map(D.stok.map(x=>[(x.sku||x.produk).toLowerCase(),x]));f.payload.forEach(x=>m.set((x.sku||x.produk).toLowerCase(),x));D.stok=[...m.values()];return f.name+" terpercaya: stok "+f.payload.length+" SKU diperbarui"}
+ if(f.kind==="Marketing"){for(const k in f.mkt){const s=f.mkt[k],m=D.mkt[k]||(D.mkt[k]={kampanye:s.kampanye,channel:s.channel,biaya:0,tayangan:0,klik:0,order:0,omzet:0});["biaya","tayangan","klik","order","omzet"].forEach(c=>m[c]+=s[c])}return f.name+" terpercaya: data "+Object.keys(f.mkt).length+" kampanye masuk"}
+ if(f.kind==="Katalog"){f.payload.forEach(x=>D.kat.set(x.produk.toLowerCase(),x));return f.name+" terpercaya: "+f.payload.length+" SKU induk dicatat"}
+ return f.name+" ditandai terpercaya";
+}
+function decide(f,ok){
+ if(!f||f.status!=="VALIDATING")return;if(ok&&blockedF(f))return;
+ P.tr.VALIDATING--;P.tr[ok?"TRUSTED":"NEEDS_REVIEW"]++;P.tr.t=Date.now();f.status=ok?"TRUSTED":"NEEDS_REVIEW";
+ if(ok)log(applyDomain(f),"g");else log(f.name+" perlu ditinjau","y");
+ render();rg();
+}
+function genSales(seed,n,pre,style,ch){
+ let s=seed;const r=()=>(s=(s*1103515245+12345)%2147483648)/2147483648,R=[];
+ for(let i=1;i<=n;i++){const p=PR[r()*PR.length|0],q=[1,1,1,2,2,3][r()*6|0];R.push({d:day(r()*7|0),t:String(9+i%12).padStart(2,"0")+":"+String(i*7%60).padStart(2,"0"),id:pre+"-"+(1000+i),p,q})}
+ if(style==="alias")return"no_pesanan,waktu_pesanan,nama_produk,kategori,jumlah,harga_satuan,total_harga,status_pesanan\n"+R.map(x=>[x.id,x.d,x.p[0],x.p[1],x.q,x.p[2],x.q*x.p[2],"selesai"].join(",")).join("\n")+"\n";
+ return"tanggal,waktu,transaction_ref,produk,kategori,qty,harga_satuan,subtotal"+(ch?",channel":"")+"\n"+R.map(x=>[x.d,x.t,x.id,x.p[0],x.p[1],x.q,x.p[2],x.q*x.p[2]].concat(ch?[ch]:[]).join(",")).join("\n")+"\n";
+}
+function sampleSet(){
+ const P2=PR.map((p,i)=>({sku:"TS-"+p[1].slice(0,3).toUpperCase()+"-"+String(i+1).padStart(2,"0"),n:p[0],c:p[1],h:p[2]}));
+ const st=[40,180,95,60,25,130,70,160,110,300],ex=["2027-03-15","2027-06-30","2027-02-10","2027-05-01","2026-08-30","2027-09-12","2027-04-20","2027-08-08","2027-07-18","2030-01-01"];
+ const stok="sku,produk,kategori,stok,batch,kedaluwarsa\n"+P2.map((x,i)=>[x.sku,x.n,x.c,st[i],"B26-"+String(i+1).padStart(2,"0"),ex[i]].join(",")).join("\n")+"\n";
+ const kat="sku,produk,kategori,harga\n"+P2.map(x=>[x.sku,x.n,x.c,x.h].join(",")).join("\n")+"\n";
+ const mk=[["Serum Flash Sale","TikTok Shop",1500000,120000,3600,210,9500000],["Live Shopping Malam","Shopee",2000000,90000,2700,120,4100000],["Lazada Payday","Lazada",1200000,60000,1500,55,1500000],["Affiliate Skincare","TikTok Shop",800000,45000,1800,95,3900000]];
+ const mkt="tanggal,channel,kampanye,biaya,tayangan,klik,order,omzet\n"+mk.flatMap((m,i)=>[day(5-i%3),day(2+i%2)].map((d,j)=>[d,m[1],m[0],m[2]/2,m[3]/2,m[4]/2,Math.floor(m[5]/2)+(j?m[5]%2:0),m[6]/2].join(","))).join("\n")+"\n";
+ const L=[["penjualan-tiktokshop.csv",genSales(41,34,"TT","std","TikTok Shop")],["penjualan-shopee.csv",genSales(52,30,"SP","alias")],["penjualan-lazada.csv",genSales(63,22,"LZ","std")],["penjualan-whatsapp.csv",genSales(74,12,"WA","alias")],["stok-gudang.csv",stok],["marketing-iklan.csv",mkt],["katalog-sku.csv",kat]];
+ L.forEach((x,i)=>setTimeout(()=>addFile(x[0],x[1],"Upload"),i*400));
+}
+const cleanable=f=>f.kind==="Penjualan"&&!f.dupOf&&(f.status==="VALIDATING"||f.status==="NEEDS_REVIEW")&&(f.counted<f.total||!!f.fix.catCase||!!f.fix.numFix);
+const fmtD=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const qcsv=v=>/[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;
+function buildClean(f,recalc){
+ const ch=[],mark=(i,col,from,to)=>{if(from!==to)ch.push({i,row:i+2,col,from:from===""?"(kosong)":from,to})};
+ const rows=f.rows.map((o,i)=>{
+  const r={};f.h.forEach(c=>r[c]=String(o[c]==null?"":o[c]).trim());
+  if(!f.nodate){const dt=pdate(r.tanggal);if(dt){const iso=fmtD(dt);mark(i,"tanggal",r.tanggal,iso);r.tanggal=iso}}
+  ["qty","harga_satuan","subtotal"].forEach(c=>{if(c in r&&r[c]!==""){const v=num(r[c]);if(!isNaN(v)){mark(i,c,r[c],String(v));r[c]=String(v)}}});
+  const m=CATS.find(x=>x[0].toLowerCase()===r.kategori.toLowerCase());if(m){mark(i,"kategori",r.kategori,m[0]);r.kategori=m[0]}
+  if(recalc&&"harga_satuan" in r){const q=num(r.qty),hg=num(r.harga_satuan);if(Number.isInteger(q)&&q>=1&&!isNaN(hg)){const e=q*hg,cur=num(r.subtotal);if(isNaN(cur)||Math.abs(cur-e)>1){mark(i,"subtotal",r.subtotal,String(e));r.subtotal=String(e)}}}
+  return r;
+ });
+ const toCsv=rs=>[f.h.map(qcsv).join(","),...rs.map(r=>f.h.map(c=>qcsv(r[c])).join(","))].join("\n")+"\n";
+ const ks=f.keys||[];ks.forEach(k=>known.delete(k));let a;try{a=analyze(toCsv(rows),f.name)}finally{ks.forEach(k=>known.add(k))}
+ const keep=rows.filter((_,i)=>!a.note[i]),dropped=[];rows.forEach((r,i)=>{if(a.note[i])dropped.push({row:i+2,why:a.note[i]})});
+ if(!keep.length)return{fail:"Tidak ada baris yang bisa diselamatkan."};
+ const changes=ch.filter(c=>!a.note[c.i]),byCol={};changes.forEach(c=>byCol[c.col]=(byCol[c.col]||0)+1);
+ const base=Math.max(1,f.total-(a.q.cancel||0)-(a.q.dup||0));
+ return{changes,byCol,dropped,kept:keep.length,orig:f.total,base,after:keep.length/base,text:toCsv(keep),recalc};
+}
+function previewHtml(r){
+ if(r.fail)return`<div class="bad" style="margin-top:8px">${esc(r.fail)}</div>`;
+ const ok=r.after>=.7,ch=r.changes.slice(0,8),dr=r.dropped.slice(0,8),bc=Object.entries(r.byCol).map(e=>e[0]+" "+e[1]).join(", ");
+ return`<div style="margin-top:10px"><b>Pratinjau</b><ul class="chk"><li class="g">✓ ${r.changes.length} nilai akan dirapikan${bc?" ("+bc+")":""}</li><li class="${r.dropped.length?"y":"g"}">${r.dropped.length?"⚠ "+r.dropped.length+" baris akan dibuang":"✓ Tidak ada baris dibuang"}</li><li class="${ok?"g":"bad"}">${r.kept} dari ${r.base} baris layak berhasil diselamatkan (${Math.round(r.after*100)}%)</li></ul>`+
+ (ch.length?`<div class="note">Contoh perubahan</div><div style="overflow-x:auto"><table class="tbl"><tr><th>Baris</th><th>Kolom</th><th>Sebelum</th><th>Sesudah</th></tr>${ch.map(c=>`<tr><td>${c.row}</td><td>${esc(c.col)}</td><td>${esc(c.from)}</td><td class="g">${esc(c.to)}</td></tr>`).join("")}</table></div>`:"")+
+ (dr.length?`<div class="note" style="margin-top:6px">Baris yang dibuang</div><div style="overflow-x:auto"><table class="tbl"><tr><th>Baris</th><th>Alasan</th></tr>${dr.map(d=>`<tr><td>${d.row}</td><td class="y">${esc(d.why)}</td></tr>`).join("")}</table></div>`:"")+
+ (r.dropped.length>8||r.changes.length>8?`<div class="note">… menampilkan sebagian</div>`:"")+
+ (ok?`<div style="margin-top:10px"><button class="pri" id="bClApply">Buat file bersih</button></div>`:`<div class="bad" style="margin-top:8px">Belum cukup: hanya ${Math.round(r.after*100)}% baris layak yang bisa diselamatkan (batas 70%). Sisanya tidak bisa diperbaiki tanpa mengarang data. Minta file yang benar dari sumbernya${r.recalc?"":", atau coba opsi hitung ulang subtotal"}.</div>`)+`</div>`;
+}
+function cleanBlock(f){
+ let h="";
+ if(f.clean){const c=f.clean;h+=`<div class="cl"><b>Hasil pembersihan dari ${esc(c.from)}</b><ul class="chk"><li class="g">✓ ${c.fixed} nilai dirapikan${c.recalc?" (subtotal dihitung ulang dari qty × harga)":""}</li><li class="${c.dropped?"y":"g"}">${c.dropped?"⚠ "+c.dropped+" baris dibuang (ganda, batal/retur, atau tidak bisa diperbaiki)":"✓ Tidak ada baris dibuang"}</li><li>${f.counted} dari ${c.base} baris layak diselamatkan (${Math.round(f.pass*100)}%)</li></ul></div>`}
+ if(!cleanable(f))return h;
+ const r=cl.fid===f.id?cl.res:null;
+ return h+`<div class="cl"><b>Bersihkan data</b><div class="note" style="margin:4px 0 8px">Otomatis dirapikan: huruf kategori, format angka (Rp, titik), format tanggal, dan spasi. Otomatis dibuang: baris ganda, pesanan batal/retur, dan baris yang tidak bisa diperbaiki (tanggal, qty, atau nilai tidak valid). Tidak ada nilai yang dikarang. File asli tidak diubah.</div><label><input type="checkbox" id="clRe" ${cl.recalc?"checked":""}> Hitung ulang subtotal dari qty × harga (anggap qty dan harga benar)</label><div style="margin-top:8px"><button id="bClPrev">Pratinjau pembersihan</button></div>${r?previewHtml(r):""}</div>`;
+}
+function applyClean(f,r){
+ const b=f.name.replace(/\.csv$/i,"");let nm=b+"-bersih.csv",k=2;while(files.some(x=>x.name===nm))nm=b+"-bersih-"+(k++)+".csv";
+ (f.keys||[]).forEach(x=>known.delete(x));
+ if(f.status==="VALIDATING")P.tr.VALIDATING--;else if(f.status==="NEEDS_REVIEW")P.tr.NEEDS_REVIEW--;
+ f.status="REPLACED";f.held=false;f.replacedBy=nm;P.tr.t=Date.now();
+ log(f.name+" dibersihkan menjadi "+nm,"g");cl.res=null;
+ addFile(nm,r.text,"Dibersihkan dari "+f.name,{derived:true,clean:{from:f.name,orig:r.orig,base:r.base,fixed:r.changes.length,dropped:r.dropped.length,recalc:r.recalc}});
+}
+function rowH(x){const c=x.held?["Ditahan","#ff6b6b"]:ST[x.status];return`<tr class="r ${x.id===sel?"s":""}" data-id="${x.id}" tabindex="0"><td>${esc(x.name)}</td><td>${x.kind}</td><td>${esc(x.channel||"—")}</td><td>${x.total}</td><td>${DOMS.includes(x.kind)&&!x.dupOf?Math.round(x.pass*100)+"%":"—"}</td><td>${kb(x.size)}</td><td><span class="pill" style="color:${c[1]};border-color:${c[1]}">${c[0]}</span></td></tr>`}
+function detail(f){
+ const isD=DOMS.includes(f.kind),sales=f.kind==="Penjualan",bl=isD&&blockedF(f);
+ const cols=sales?["tanggal","produk","kategori","qty","harga_satuan","subtotal","status"].filter(c=>f.h.includes(c)):f.h.slice(0,7);
+ const chk=f.dupOf?`<li class="bad">✗ Isi sama persis dengan ${esc(f.dupOf)}, tidak dihitung ulang</li>`:f.kind==="Tidak terbaca"?`<li class="y">✗ File kosong atau tidak terbaca</li>`:isD?checksFor(f):`<li class="g">✓ ${f.total} baris terbaca</li><li class="note">ℹ Format belum dikenali sebagai penjualan, stok, marketing, atau katalog; tidak masuk Panggung</li>`;
+ const act=f.status==="REPLACED"?`<div class="note">Digantikan oleh versi bersih: ${esc(f.replacedBy)}. Tidak dihitung.</div>`:f.status==="VALIDATING"?(bl?`<div class="bad" style="margin-bottom:8px">Tidak bisa ditandai terpercaya: terlalu banyak baris bermasalah.</div><button data-ok="0">Tandai perlu ditinjau</button>`:`<button class="pri" data-ok="1">Tandai terpercaya</button><button data-ok="0">Perlu ditinjau</button>`):f.status==="TRUSTED"?`<div class="g">${isD?"Sudah masuk ke angka Panggung":"Terpercaya"}</div>`:f.status==="NEEDS_REVIEW"?(f.held?`<div class="bad">Ditahan otomatis: hanya ${Math.round(f.pass*100)}% baris lolos (batas 70%). Tidak dihitung dan tidak tampil di angka Panggung. Perbaiki file lalu unggah ulang.</div>`:`<div class="y">Perlu ditinjau, belum dihitung</div>`):`<div class="note">Menunggu proses…</div>`;
+ const idx=f.rows.map((_,i)=>i),badI=idx.filter(i=>f.note[i]),bs=badI.slice(0,7),gs=idx.filter(i=>!f.note[i]).slice(0,10-bs.length),pick=[...bs,...gs].sort((a,b)=>a-b);
+ const tbl=cols.length?`<div style="overflow-x:auto"><table class="tbl"><tr><th>Baris</th>${cols.map(c=>`<th>${esc(c)}</th>`).join("")}${isD?"<th>Pemeriksaan</th>":""}</tr>${pick.map(i=>`<tr><td>${i+2}</td>${cols.map(c=>`<td>${esc(f.rows[i][c]||"")}</td>`).join("")}${isD?(f.note[i]?`<td class="y">⚠ ${esc(f.note[i])}</td>`:`<td class="g">✓</td>`):""}</tr>`).join("")}</table></div><div class="note">Menampilkan ${pick.length} dari ${f.total} baris${badI.length?" (baris bermasalah ditampilkan lebih dulu)":""}</div>`:"";
+ return`<h2>${esc(f.name)}</h2><div class="note">${f.kind} · ${esc(f.channel||"tanpa channel")} · ${esc(f.src)} · ${kb(f.size)} · ${f.total} baris</div>${tbl}<ul class="chk">${chk}</ul>${cleanBlock(f)}<div style="margin-top:10px">${act}</div>`;
+}
+function fileTab(){
+ const f=files.find(x=>x.id===sel),pend=files.some(x=>x.status==="VALIDATING"),cnt=d=>d==="Semua"?files.length:files.filter(x=>x.kind===d).length,list=files.filter(x=>dom==="Semua"||x.kind===dom);
+ return`<div class="up" id="drop">Seret banyak file CSV ke sini, atau <button id="bPick">pilih file</button><button id="bSample">isi contoh Talatee Skincare (7 file)</button><button id="bDirty">isi 2 file kotor</button><input type="file" id="file" accept=".csv,text/csv" multiple hidden></div>
+ <div class="chips">${["Semua",...DOMS].map(d=>`<button data-dom="${d}" class="${dom===d?"on":""}">${d} (${cnt(d)})</button>`).join("")}</div>
+ <div class="gl"><div class="panel" style="padding:10px"><h2>Folder: ${dom} <span class="note">${files.length} file${pend?` <button id="bAll" style="margin-left:6px">Tandai semua terpercaya</button>`:""}</span></h2><div style="overflow-x:auto"><table class="fl"><tr><th>Nama</th><th>Domain</th><th>Channel</th><th>Baris</th><th>Lolos</th><th>Ukuran</th><th>Status</th></tr>${list.length?list.map(rowH).join(""):`<tr><td colspan="7" class="empty">Belum ada file di folder ini. Unggah atau isi file contoh.</td></tr>`}</table></div></div>
+ <div class="panel">${f?detail(f):`<div class="empty">Pilih file untuk melihat isinya.</div>`}</div></div>`;
+}
+function apiTab(){
+ return`<div class="gl"><div class="panel"><h2>Koneksi baru</h2><div class="fm">
+ <label>Nama koneksi<input type="text" id="fn" value="${esc(fm.name)}" placeholder="mis. Data penjualan toko"></label>
+ <label>Jenis<select id="ft">${["REST API (JSON)","Google Sheets","Webhook masuk"].map(x=>`<option${x===fm.type?" selected":""}>${x}</option>`).join("")}</select></label>
+ <label>URL endpoint<input type="text" id="fu" value="${esc(fm.url)}" placeholder="https://api.contoh.com/v1/penjualan"></label>
+ <label>API key<input type="password" id="fk" autocomplete="off" value="${esc(fm.key)}" placeholder="disimpan di server, bukan di browser"></label>
+ <div><button id="bTest">Tes koneksi</button><button class="pri" id="bSave">Simpan koneksi</button></div><div class="note" id="fmsg">${esc(fm.msg)}</div></div>
+ <p class="note" style="margin-top:10px">Mode simulasi: browser ini tidak memanggil API sungguhan. Di versi nyata backend yang memanggil API dan kunci disimpan terenkripsi di server. Kunci yang diketik di sini tidak disimpan.</p></div>
+ <div class="panel"><h2>Koneksi tersimpan <span class="note">${conns.length}</span></h2>${conns.length?conns.map(c=>`<div class="cn"><div><b>${esc(c.name)}</b><div class="note">${esc(c.type)} · ${esc(c.host)} · <span class="g">Terhubung</span> · tarik terakhir: ${c.last?ago(c.last)+" lalu":"belum"}</div></div><div><button data-pull="${c.id}" class="pri">Tarik data</button><button data-del="${c.id}">Hapus</button></div></div>`).join(""):`<div class="empty">Belum ada koneksi.</div>`}</div></div>`;
+}
+function panels(){
+ const ce=Object.entries(D.chan).sort((a,b)=>b[1]-a[1]),ct=ce.reduce((n,x)=>n+x[1],0)||1,cc=Object.fromEntries(CH.map(c=>[c[0],c[2]]));
+ $("chanP").innerHTML=ce.map(([k,v])=>`<div class="rb"><span>${esc(k)}</span><div class="rt"><i style="width:${v/ct*100}%;background:${cc[k]||"#7d9487"}"></i></div><b>${rp(v)}</b></div>`).join("");
+ if(!D.stok.length)$("stokP").innerHTML=`<div class="empty">Belum ada data stok terpercaya. Unggah dan verifikasi stok-gudang.csv di Gudang data.</div>`;
+ else{const L=D.stok.map(x=>{const r=(D.prod[x.produk]||0)/30,d=x.expired?0:r>0?x.stok/r:Infinity;return Object.assign({},x,{d})}).sort((a,b)=>a.d-b.d).slice(0,5);
+  $("stokP").innerHTML=L.map(x=>`<div class="rb"><span>${esc(x.produk)}</span><div class="rt"><i style="width:${isFinite(x.d)?Math.min(100,x.d/60*100):100}%;background:${x.expired||x.d<14?"#ff6b6b":x.d<30?"#f5c542":"#22ff66"}"></i></div><b>${x.expired?"kedaluwarsa":isFinite(x.d)?Math.round(x.d)+" hari":"—"}</b></div>`).join("")+`<div class="note" style="margin-top:6px">Sisa hari = stok ÷ rata-rata penjualan harian</div>`}
+ const M=Object.values(D.mkt);
+ $("mktP").innerHTML=!M.length?`<div class="empty">Belum ada data kampanye terpercaya. Unggah dan verifikasi marketing-iklan.csv di Gudang data.</div>`:`<table class="fl"><tr><th>Kampanye</th><th>Channel</th><th>Biaya</th><th>Omzet</th><th>ROAS</th></tr>${M.map(m=>Object.assign({},m,{roas:m.biaya?m.omzet/m.biaya:0})).sort((a,b)=>b.roas-a.roas).map(m=>`<tr><td>${esc(m.kampanye)}</td><td>${esc(m.channel)}</td><td>${rp(m.biaya)}</td><td>${rp(m.omzet)}</td><td class="${m.roas>=3?"g":m.roas>=1.5?"y":"bad"}">${m.roas.toFixed(1).replace(".",",")}x</td></tr>`).join("")}</table>`;
+}
+function badge(){const n=files.filter(f=>f.status==="VALIDATING"||f.held).length;$("bGd").textContent=n?"Gudang data ("+n+")":"Gudang data";$("bGd").title=n?n+" file menunggu verifikasi atau ditahan":""}
+function toast(t){const e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display="none",3200)}
+function okFile(f){if(!/\.(csv|txt)$/i.test(f.name)){toast("Demo ini hanya menerima file CSV: "+f.name);return false}if(f.size>3e6){toast(f.name+" lebih dari 3 MB, dilewati");return false}return true}
+function rg(){
+ if(!$("gd").classList.contains("open"))return;
+ $("gb").innerHTML=tab==="file"?fileTab():apiTab();
+ const g=id=>$(id),q=s=>document.querySelectorAll(s);
+ if(tab==="file"){
+  g("bPick").onclick=()=>g("file").click();
+  g("file").onchange=async e=>{for(const f of e.target.files)if(okFile(f))addFile(f.name,await f.text(),"Upload");e.target.value=""};
+  g("bSample").onclick=sampleSet;g("bDirty").onclick=()=>{addFile("penjualan-agak-kotor.csv",dirty(1),"Upload");setTimeout(()=>addFile("penjualan-sangat-kotor.csv",dirty(2),"Upload"),450)};
+  const dz=g("drop");dz.ondragover=e=>{e.preventDefault();dz.classList.add("drag")};dz.ondragleave=()=>dz.classList.remove("drag");
+  dz.ondrop=async e=>{e.preventDefault();dz.classList.remove("drag");for(const f of e.dataTransfer.files)if(okFile(f))addFile(f.name,await f.text(),"Upload")};
+  q("[data-dom]").forEach(b=>b.onclick=()=>{dom=b.dataset.dom;rg()});
+  q("tr.r").forEach(r=>{r.onclick=()=>{sel=+r.dataset.id;rg()};r.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();sel=+r.dataset.id;rg()}}});
+  if(g("clRe"))g("clRe").onchange=e=>{cl.recalc=e.target.checked;cl.res=null;rg()};
+  if(g("bClPrev"))g("bClPrev").onclick=()=>{const f=files.find(x=>x.id===sel);cl.fid=f.id;cl.res=buildClean(f,cl.recalc);rg()};
+  if(g("bClApply"))g("bClApply").onclick=()=>{const f=files.find(x=>x.id===sel);if(f&&cl.res&&cl.res.text&&cleanable(f))applyClean(f,cl.res)};
+  q("[data-ok]").forEach(b=>b.onclick=()=>decide(files.find(x=>x.id===sel),b.dataset.ok==="1"));
+  if(g("bAll"))g("bAll").onclick=()=>{const v=files.filter(x=>x.status==="VALIDATING"),b=v.filter(blockedF).length;v.forEach(x=>decide(x,true));if(b)toast(b+" file tidak diverifikasi karena terlalu banyak baris bermasalah")};
+ }else{
+  g("fn").oninput=e=>fm.name=e.target.value;g("ft").onchange=e=>fm.type=e.target.value;g("fu").oninput=e=>fm.url=e.target.value;g("fk").oninput=e=>fm.key=e.target.value;
+  const msg=t=>{fm.msg=t;g("fmsg").textContent=t},okU=()=>/^https:\/\/[^\s/]+\.[^\s/]+/.test(fm.url);
+  g("bTest").onclick=()=>{msg("Menguji koneksi…");setTimeout(()=>msg(!okU()?"✗ URL harus diawali https:// dan valid":!fm.key?"✗ API key belum diisi":"✓ Terhubung (simulasi)"),800)};
+  g("bSave").onclick=()=>{if(!fm.name.trim()||!okU())return msg("Isi nama dan URL https:// yang valid dulu.");let h="";try{h=new URL(fm.url).host}catch(e){}
+   conns.push({id:++fid,name:fm.name.trim(),type:fm.type,host:h,last:null});fm={name:"",type:fm.type,url:"",key:"",msg:"Koneksi tersimpan."};log("Koneksi "+conns[conns.length-1].name+" tersimpan","b");render();rg()};
+  q("[data-pull]").forEach(b=>b.onclick=()=>{const c=conns.find(x=>x.id==+b.dataset.pull);c.last=Date.now();tab="file";document.querySelectorAll(".gt button").forEach(x=>x.classList.toggle("on",x.dataset.t==="file"));
+   const d=new Date();addFile("api-"+c.name.toLowerCase().replace(/[^a-z0-9]+/g,"-")+"-"+String(d.getHours()).padStart(2,"0")+String(d.getMinutes()).padStart(2,"0")+".json",sample(d.getTime()%99991+1,day(0),14+(Math.random()*12|0),"API"+d.getTime()%1e6),"API · "+c.name)});
+  q("[data-del]").forEach(b=>b.onclick=()=>{conns=conns.filter(x=>x.id!=+b.dataset.del);rg()});
+ }
+}
+document.querySelectorAll(".gt button").forEach(b=>b.onclick=()=>{tab=b.dataset.t;document.querySelectorAll(".gt button").forEach(x=>x.classList.toggle("on",x===b));rg()});
+const closeG=()=>{if(!$("gd").classList.contains("open"))return;$("gd").classList.remove("open");document.body.style.overflow="";$("bGd").focus()};
+$("bGd").onclick=()=>{$("gd").classList.add("open");document.body.style.overflow="hidden";rg();$("gx").focus()};
+$("gx").onclick=$("gbk").onclick=closeG;
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeG()});
+
+/* ---------- Hermes: jawaban dihitung dari data yang sama ---------- */
+const QS=["Produk apa yang paling laris bulan ini?","Channel mana yang omzetnya terbesar?","Stok produk mana yang hampir habis?","Kampanye mana yang paling efektif?","Bagaimana tren penjualan 7 hari terakhir?","Berapa batch yang sudah terpercaya?"];
+const pct1=v=>v.toFixed(1).replace(".",",");
+function answer(q){
+ const s=q.toLowerCase(),src="dataset penjualan_harian · riwayat 30 hari + "+P.tr.TRUSTED+" batch terpercaya";
+ if(/stok|habis|persediaan/.test(s)){
+  if(!D.stok.length)return{tools:["cek_stok"],txt:"Belum ada data stok yang terpercaya, jadi saya belum bisa menjawab.",src:null};
+  const L=D.stok.map(x=>({x,d:x.expired?0:(D.prod[x.produk]||0)>0?x.stok/((D.prod[x.produk]||0)/30):Infinity})).sort((a,b)=>a.d-b.d),a=L[0],b=L.find(z=>!z.x.expired&&z!==a);
+  return{tools:["cek_stok","hitung_sisa_hari"],txt:a.x.expired?a.x.produk+" sudah kedaluwarsa dan tidak dihitung sebagai stok tersedia."+(b?" Yang paling cepat habis berikutnya "+b.x.produk+" (sekitar "+Math.round(b.d)+" hari).":""):a.x.produk+" paling cepat habis, sekitar "+Math.round(a.d)+" hari lagi pada laju penjualan sekarang.",src:"stok terpercaya · "+D.stok.length+" SKU"};
+ }
+ if(/kampanye|roas|iklan|marketing/.test(s)){
+  const M=Object.values(D.mkt).map(m=>Object.assign({},m,{roas:m.biaya?m.omzet/m.biaya:0})).sort((a,b)=>b.roas-a.roas);
+  if(!M.length)return{tools:["ringkas_kampanye"],txt:"Belum ada data kampanye yang terpercaya, jadi saya belum bisa menjawab.",src:null};
+  const w=M[M.length-1];return{tools:["ringkas_kampanye","hitung_roas"],txt:M[0].kampanye+" paling efektif dengan ROAS "+pct1(M[0].roas)+"x. Yang paling lemah "+w.kampanye+" ("+pct1(w.roas)+"x).",src:"laporan kampanye terpercaya · "+M.length+" kampanye"};
+ }
+ if(/channel|platform/.test(s)&&!/laris/.test(s)){
+  const e=Object.entries(D.chan).sort((a,b)=>b[1]-a[1]),t=e.reduce((n,x)=>n+x[1],0);
+  return{tools:["cari_dataset","ringkas_per_channel"],txt:e[0][0]+" menjadi channel terbesar dengan "+pct1(e[0][1]/t*100)+"% omzet, disusul "+e[1][0]+" ("+pct1(e[1][1]/t*100)+"%).",src};
+ }
+ if(/laris|produk|kategori/.test(s)){
+  const e=Object.entries(D.cats).sort((a,b)=>b[1]-a[1]),tot=e.reduce((n,x)=>n+x[1],0);
+  return{tools:["cari_dataset","ringkas_penjualan"],txt:e[0][0]+" memimpin dengan "+pct1(e[0][1]/tot*100)+"% dari omzet 30 hari terakhir, disusul "+e[1][0]+" ("+pct1(e[1][1]/tot*100)+"%).",src};
+ }
+ if(/tren|naik|turun|omzet|penjualan/.test(s)){
+  const a=D.days.slice(23).reduce((n,x)=>n+x.rev,0),b=D.days.slice(16,23).reduce((n,x)=>n+x.rev,0),p=(a-b)/b*100;
+  return{tools:["cari_dataset","hitung_tren"],txt:"Omzet 7 hari terakhir "+rp(a)+", "+(p>=0?"naik ":"turun ")+pct1(Math.abs(p))+"% dibanding 7 hari sebelumnya ("+rp(b)+").",src};
+ }
+ if(/batch|percaya|valid|status/.test(s)){
+  return{tools:["status_batch"],txt:P.tr.TRUSTED+" batch sudah terpercaya dan dihitung ke angka dashboard. "+P.tr.NEEDS_REVIEW+" perlu ditinjau dan "+(P.tr.INGESTED+P.tr.VALIDATING)+" masih diproses.",src};
+ }
+ return{tools:[],txt:"Saya baru bisa menjawab soal produk terlaris, channel, stok, kampanye, tren penjualan, dan status batch.",src:null};
+}
+function ask(q){
+ q=q.trim().slice(0,200);if(!q)return;
+ const m=$("msgs");m.insertAdjacentHTML("beforeend",`<div class="m u"></div>`);m.lastChild.textContent=q;
+ P.q.c++;P.q.t=Date.now();log("Hermes ditanya","b");render();
+ setTimeout(()=>{const r=answer(q);P.a.c++;P.a.t=Date.now();log("Hermes menjawab dengan sumber","g");
+  m.insertAdjacentHTML("beforeend",`<div class="m h">${r.tools.map(t=>`<span class="chip">${t}()</span>`).join("")}<div class="ans"></div>${r.src?`<div class="src">Sumber: ${r.src}</div>`:""}</div>`);
+  m.lastChild.querySelector(".ans").textContent=r.txt;m.scrollTop=m.scrollHeight;render();},700);
+ m.scrollTop=m.scrollHeight;
+}
+
+/* ---------- render ---------- */
+function chart(){
+ const d=D.days.slice(-range),W=640,H=210,pl=44,pb=22,mx=Math.max(...d.map(x=>x.rev))*1.1;
+ const X=i=>pl+i*(W-pl-8)/(d.length-1),Y=v=>H-pb-v/mx*(H-pb-10);
+ const pts=d.map((x,i)=>X(i)+","+Y(x.rev)).join(" ");
+ let g="";for(let k=0;k<=3;k++){const v=mx*k/3,y=Y(v);g+=`<line x1="${pl}" x2="${W-8}" y1="${y}" y2="${y}" stroke="#1b2c21"/><text x="${pl-6}" y="${y+4}" fill="#7d9487" font-size="10" text-anchor="end">${v>=1e6?(v/1e6).toFixed(1)+"jt":Math.round(v/1000)+"rb"}</text>`;}
+ const now=new Date(),lab=[0,Math.floor(d.length/2),d.length-1].map(i=>{const dt=new Date(now-(d.length-1-i)*864e5);return`<text x="${X(i)}" y="${H-5}" fill="#7d9487" font-size="10" text-anchor="${i?i===d.length-1?"end":"middle":"start"}">${dt.getDate()}/${dt.getMonth()+1}</text>`}).join("");
+ $("chart").innerHTML=`<svg viewBox="0 0 ${W} ${H}"><defs><linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22ff66" stop-opacity=".28"/><stop offset="1" stop-color="#22ff66" stop-opacity="0"/></linearGradient></defs>${g}${lab}<polygon points="${X(0)},${H-pb} ${pts} ${X(d.length-1)},${H-pb}" fill="url(#gr)"/><polyline points="${pts}" fill="none" stroke="#22ff66" stroke-width="2"/><circle cx="${X(d.length-1)}" cy="${Y(d[d.length-1].rev)}" r="4" fill="#22ff66"/></svg>`;
+}
+function donut(){
+ const tot=Object.values(D.cats).reduce((a,b)=>a+b,0),C=2*Math.PI*52;let off=0,seg="";
+ CATS.forEach(c=>{const f=D.cats[c[0]]/tot;seg+=`<circle cx="70" cy="70" r="52" fill="none" stroke="${c[2]}" stroke-width="16" stroke-dasharray="${f*C} ${C}" stroke-dashoffset="${-off*C}" transform="rotate(-90 70 70)"/>`;off+=f;});
+ const n=sum(D.days.slice(-30),"ord");
+ $("donut").innerHTML=`<svg viewBox="0 0 140 140" style="width:140px;flex:none">${seg}<text x="70" y="66" fill="#7d9487" font-size="9" text-anchor="middle">Total order</text><text x="70" y="84" fill="#e8f3ec" font-size="18" font-weight="600" text-anchor="middle">${n.toLocaleString("id-ID")}</text></svg><div class="leg">${CATS.map(c=>`<div><i class="sw" style="background:${c[2]}"></i>${c[0]}<b>${(D.cats[c[0]]/tot*100).toFixed(1).replace(".",",")}%</b></div>`).join("")}</div>`;
+}
+function render(){
+ const flow=[["File masuk","Upload atau bridge",P.file.c,P.file.t],["Batch tercatat","Postgres + mentah",P.batch.c,P.batch.t],["Terpercaya","Lolos validasi",P.tr.TRUSTED,P.tr.t],["Hermes bertanya","MCP, hanya baca",P.q.c,P.q.t],["Jawaban + sumber","Dataset &amp; batch",P.a.c,P.a.t]];
+ const cnt=flow.map(f=>f[2]);cnt.forEach((v,i)=>{if(prev.c&&v>prev.c[i])bump[i]=Date.now()});
+ $("flow").innerHTML=flow.map((f,i)=>`<div class="fs ${Date.now()-(bump[i]||0)<1400?"pulse":""}"><b>${f[0]}</b><small>${f[1]}</small><div class="n">${f[2]}</div><small>${f[3]?ago(f[3])+" lalu":"belum ada"}</small></div>`).join("");
+ prev.c=cnt;
+ const d=D.days,w=sum(d.slice(23),"rev"),w0=sum(d.slice(16,23),"rev"),tr=P.tr,tb=tr.TRUSTED+tr.NEEDS_REVIEW,pc=tb?tr.TRUSTED/tb*100:100;
+ $("kpis").innerHTML=[["Omzet 30 hari",rp(sum(d,"rev")),"hanya dari batch terpercaya"],["Order 30 hari",sum(d,"ord").toLocaleString("id-ID"),"order hari ini: "+d[29].ord],["Omzet 7 hari",rp(w),((w-w0)/w0*100>=0?"▲ ":"▼ ")+Math.abs((w-w0)/w0*100).toFixed(1).replace(".",",")+"% vs minggu lalu"],["Batch lolos",pc.toFixed(0)+"%",tr.NEEDS_REVIEW+" perlu ditinjau"]].map(k=>`<div class="kpi"><small>${k[0]}</small><div class="v">${k[1]}</div><div class="d">${k[2]}</div></div>`).join("");
+ chart();donut();badge();panels();
+ const tot=TR.reduce((a,x)=>a+tr[x[0]],0)||1;
+ $("bar").innerHTML=TR.map(x=>`<i style="width:${tr[x[0]]/tot*100}%;background:${x[2]}"></i>`).join("");
+ $("tleg").innerHTML=TR.map(x=>`<div><i class="sw" style="background:${x[2]}"></i>${x[1]}<b>${tr[x[0]]}</b></div>`).join("")+`<div class="note" style="margin-top:6px">Data baru baru dihitung setelah terpercaya.</div>`;
+ $("feed").innerHTML=feed.length?feed.map(f=>`<li><time>${ago(f.t)}</time><span class="${f.tone}">${f.text}</span></li>`).join(""):`<li class="empty">Belum ada aktivitas. Kirim transaksi demo.</li>`;
+}
+
+/* ---------- kontrol ---------- */
+$("sugs").innerHTML=QS.map(q=>`<button>${q}</button>`).join("");
+$("sugs").onclick=e=>{if(e.target.tagName==="BUTTON")ask(e.target.textContent)};
+$("bAsk").onclick=()=>{ask($("inp").value);$("inp").value=""};
+$("inp").onkeydown=e=>{if(e.key==="Enter"){ask($("inp").value);$("inp").value=""}};
+$("seg").onclick=e=>{const b=e.target.closest("button");if(!b)return;range=+b.dataset.d;[...$("seg").children].forEach(x=>x.classList.toggle("on",x===b));chart()};
+$("bTx").onclick=()=>tx();
+$("bReset").onclick=()=>{fresh();files=[];conns=[];sel=null;known.clear();cl={fid:null,recalc:false,res:null};rg();$("msgs").innerHTML=`<div class="m h">Saya menjawab dari data yang sudah terpercaya. Coba salah satu pertanyaan di bawah.</div>`;render()};
+$("auto").onchange=e=>{clearInterval(timer);if(e.target.checked){tx();timer=setInterval(()=>tx(),4500)}};
+$("bLive").onclick=()=>{document.body.classList.toggle("live-mode");$("bLive").textContent=document.body.classList.contains("live-mode")?"Keluar siaran":"Mode siaran"};
+render();setInterval(render,1000);
+</script></body></html>
