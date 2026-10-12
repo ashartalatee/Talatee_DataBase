@@ -72,3 +72,6 @@ from app.api.routes import kompas_funnel
 app.include_router(kompas_funnel.router)
 from app.api.routes import showcase_health
 app.include_router(showcase_health.router)
+
+from app.api.routes import stage
+app.include_router(stage.router)

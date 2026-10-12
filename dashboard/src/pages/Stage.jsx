@@ -98,12 +98,13 @@ export default function Stage() {
   const catTotal = categories.reduce((n, c) => n + c.value, 0) || 1
   const chanMax = Math.max(1, ...channels.map((c) => c.value))
 
+  const hermesOn = data.hermes_connected !== false
   const steps = [
     ['File masuk', 'Upload atau bridge', flow.file.count, flow.file.last],
     ['Batch tercatat', 'Postgres + penyimpanan mentah', flow.batch.count, flow.batch.last],
     ['Status kepercayaan', 'Dari baru masuk ke terpercaya', `${trusted}/${trustTotal}`, flow.trust.last],
-    ['Hermes bertanya', 'Lewat MCP, hanya baca', flow.question.count, flow.question.last],
-    ['Jawaban + sumbernya', 'Dataset dan batch yang dipakai', flow.answer.count, flow.answer.last],
+    ['Hermes bertanya', 'Lewat MCP, hanya baca', hermesOn ? flow.question.count : '–', hermesOn ? flow.question.last : null],
+    ['Jawaban + sumbernya', 'Dataset dan batch yang dipakai', hermesOn ? flow.answer.count : '–', hermesOn ? flow.answer.last : null],
   ]
   const kpis = [
     ['Omzet 30 hari', rp(omzet), 'dari batch terpercaya'],
@@ -132,7 +133,7 @@ export default function Stage() {
           <div key={t} className={`st-step${last && now - last < 2500 ? ' pulse' : ''}`}>
             <b>{t}</b><small>{s}</small>
             <div className="st-n">{n}</div>
-            <small>{ago(last, now)}</small>
+            <small>{!hermesOn && (t === 'Hermes bertanya' || t === 'Jawaban + sumbernya') ? 'Belum tersambung' : ago(last, now)}</small>
           </div>
         ))}
       </section>
@@ -160,7 +161,8 @@ export default function Stage() {
 
           <div className="st-two">
             <Panel title="Penjualan per kategori" note="30 hari">
-              <div className="st-donut">
+              {categories.length === 0 && <p className="st-empty">Belum ada penjualan dari dataset terpercaya.</p>}
+              {categories.length > 0 && <div className="st-donut">
                 <div className="st-pie">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart><Pie data={categories.map((c, i) => ({ ...c, fill: COLORS[i % COLORS.length] }))} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="92%" stroke="none" isAnimationActive={false}>
@@ -172,7 +174,7 @@ export default function Stage() {
                     <li key={c.name}><i style={{ background: COLORS[i % COLORS.length] }} />{c.name}<b>{Math.round((c.value / catTotal) * 100)}%</b></li>
                   ))}
                 </ul>
-              </div>
+              </div>}
             </Panel>
             <Panel title="Dari baru masuk ke terpercaya">
               <div className="st-bar">
@@ -186,6 +188,7 @@ export default function Stage() {
 
           <div className="st-two">
             <Panel title="Omzet per channel" note="30 hari">
+              {channels.length === 0 && <p className="st-empty">Belum ada data channel.</p>}
               {channels.map((c, i) => (
                 <div key={c.name} className="st-rb">
                   <span>{c.name}</span>
@@ -206,7 +209,7 @@ export default function Stage() {
         <div className="st-col">
           <Panel title="Hermes menjawab" note="hanya membaca">
             <div className="st-hermes">
-              {hermes.length === 0 && <p className="st-empty">Menunggu pertanyaan masuk.</p>}
+              {hermes.length === 0 && <p className="st-empty">{hermesOn ? 'Menunggu pertanyaan masuk.' : 'Log Hermes belum tersambung.'}</p>}
               {hermes.map((m, i) => (
                 <div key={`${m.q}-${i}`} className="st-qa">
                   <div className="st-q">{m.q}</div>

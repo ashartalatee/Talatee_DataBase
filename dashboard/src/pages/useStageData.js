@@ -10,7 +10,8 @@
 //   categories: [{ name, value }], channels: [{ name, value }],
 //   low_stock: [{ name, stok }],
 //   hermes: [{ q, a, sources:["get_top_products", ...] }],         // terbaru di atas
-//   feed: [{ t, text, tone:"g"|"b"|"y" }]                          // terbaru di atas
+//   feed: [{ t, text, tone:"g"|"b"|"y" }],                         // terbaru di atas
+//   hermes_connected: true|false   // false = log Hermes belum tersimpan; kartunya tampil "Belum tersambung"
 // }
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
@@ -42,6 +43,7 @@ function initial() {
     trend, cats, products: { ...PROD },
     chan: Object.fromEntries(CHAN.map((c) => [c[0], Math.round(total * c[1])])),
     low_stock: [{ name: 'Cushion Foundation', stok: 25 }, { name: 'Serum Vitamin C', stok: 40 }, { name: 'Lip Cream Matte', stok: 60 }],
+    hermes_connected: true,
     hermes: [], feed: [{ t: now, text: 'Panggung siap. Menunggu transaksi demo.', tone: 'b' }],
   }
 }
@@ -130,7 +132,11 @@ export function useStageData() {
         if (!api.getStageSummary) throw new Error('api.getStageSummary belum dibuat di client.js')
         const d = await api.getStageSummary()
         if (alive) { setData(d); setError(null) }
-      } catch (e) { if (alive) setError(e.message || 'Gagal mengambil data') }
+      } catch (e) {
+        // Detail hanya ke konsol: layar ini bisa tampil saat siaran, jadi pesannya sengaja umum.
+        console.warn('[panggung]', e)
+        if (alive) setError('Tidak bisa mengambil data. Cek apakah backend menyala dan kamu sudah login.')
+      }
     }
     pull()
     const id = setInterval(pull, 3000)

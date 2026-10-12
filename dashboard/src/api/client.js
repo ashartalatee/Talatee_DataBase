@@ -100,7 +100,7 @@ export const api = {
   getSource: (id) => request(`/sources/${id}`),
   listSourcesTrusted: () => request('/sources?trust=trusted'),
   getShowcaseHealth: () => request('/showcase/health'),
-
+  getStageSummary: () => request('/stage/summary'),
   listDatasets: (trust) => request(trust ? `/datasets?trust=${trust}` : '/datasets'),
   getDataset: (id) => request(`/datasets/${id}`),
   listBatches: (datasetId) =>

@@ -22,7 +22,7 @@ from app.db.session import SessionLocal  # noqa: E402
 from app.models import ApiKey, Business  # noqa: E402
 from app.security.api_key import hash_key  # noqa: E402
 
-DEMO_BUSINESS_NAME = "Talatee Skincare"
+DEMO_BUSINESS_NAME = "Skincare Demo"
 DEMO_BUSINESS_CATEGORY = "marketplace"
 DEMO_KEY_NAME = "Panggung Demo"
 
