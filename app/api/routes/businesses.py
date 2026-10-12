@@ -26,6 +26,7 @@ def list_business_categories():
 @router.get("", response_model=list[BusinessListItemOut])
 def list_businesses(
     trust: Literal["all", "trusted"] = Query("all"),
+    include_demo: bool = Query(False),
     db: Session = Depends(get_db),
 ):
     # Business yang di-trash TIDAK ikut muncul di sini sama sekali (bukan
@@ -54,6 +55,9 @@ def list_businesses(
         func.count(func.distinct(case((Dataset.trust_status == "TRUSTED", Dataset.id), else_=None))),
     ).filter(Business.deleted_at.is_(None))
 
+    if not include_demo:
+        query = query.filter(Business.is_demo.is_(False))
+
     if trust == "trusted":
         dataset_on = dataset_on & (Dataset.trust_status == "TRUSTED")
         # inner join: business tanpa dataset TRUSTED otomatis tersaring
@@ -73,6 +77,7 @@ def list_businesses(
             name=b.name,
             category=b.category,
             status=b.status,
+            is_demo=b.is_demo,
             created_at=b.created_at,
             total_sources=total_sources,
             total_datasets=total_datasets,

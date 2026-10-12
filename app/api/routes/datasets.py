@@ -19,6 +19,7 @@ router = APIRouter(prefix="/datasets", tags=["datasets"], dependencies=[Depends(
 @router.get("", response_model=list[DatasetListItemOut])
 def list_datasets(
     trust: Literal["all", "trusted", "untrusted"] = Query("all"),
+    include_demo: bool = Query(False),
     db: Session = Depends(get_db),
 ):
     """List semua dataset dengan info ringkas: total records (jumlah
@@ -34,7 +35,11 @@ def list_datasets(
       - "all"       -> semuanya (dipakai form Laboratorium untuk memilih
                        dataset yang mau ditautkan ke eksperimen)
     """
+    from app.models import Business
+
     base = trash_service.visible_datasets_query(db)
+    if not include_demo:
+        base = base.filter(Business.is_demo.is_(False))
     if trust == "trusted":
         base = base.filter(Dataset.trust_status == "TRUSTED")
     elif trust == "untrusted":

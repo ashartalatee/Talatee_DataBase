@@ -85,7 +85,13 @@ export const api = {
   getOverview: () => request('/stats/overview'),
 
   listBusinessCategories: () => request('/businesses/categories'),
-  listBusinesses: (trust) => request(trust ? `/businesses?trust=${trust}` : '/businesses'),
+  listBusinesses: (trust, includeDemo) => {
+    const q = new URLSearchParams()
+    if (trust) q.set('trust', trust)
+    if (includeDemo) q.set('include_demo', 'true')
+    const s = q.toString()
+    return request(s ? `/businesses?${s}` : '/businesses')
+  },
   getBusiness: (id) => request(`/businesses/${id}`),
   getBusinessSources: (id) => request(`/businesses/${id}/sources`),
 

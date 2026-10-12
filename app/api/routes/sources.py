@@ -19,6 +19,7 @@ router = APIRouter(prefix="/sources", tags=["sources"], dependencies=[Depends(re
 def list_sources(
     business_id: Optional[uuid.UUID] = None,
     trust: Literal["all", "trusted"] = Query("all"),
+    include_demo: bool = Query(False),
     db: Session = Depends(get_db),
 ):
     """List source yang tidak di-trash.
@@ -31,7 +32,11 @@ def list_sources(
                      terlihat di Eksperimen.
       - "all"     -> semua source.
     """
+    from app.models import Business
+
     query = trash_service.visible_sources_query(db)
+    if not include_demo:
+        query = query.filter(Business.is_demo.is_(False))
     if business_id is not None:
         query = query.filter(Source.business_id == business_id)
     if trust == "trusted":

@@ -12,6 +12,7 @@ class BusinessListItemOut(BaseModel):
     name: str
     category: str
     status: str
+    is_demo: bool = False
     created_at: datetime
     total_sources: int
     total_datasets: int
@@ -28,6 +29,7 @@ class BusinessOut(BaseModel):
     name: str
     category: str
     status: str
+    is_demo: bool = False
     created_at: datetime
     deleted_at: Optional[datetime] = None
     deleted_by: Optional[str] = None

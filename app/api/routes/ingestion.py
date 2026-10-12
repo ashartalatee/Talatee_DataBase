@@ -54,12 +54,57 @@ async def _run_ingest(
     return batch
 
 
+def _resolve_business_for_api_key(
+    db: Session,
+    api_key,
+    business_name: str | None,
+) -> str:
+    """Tentukan nama bisnis tujuan upload mesin.
+
+    - Key lama (tanpa business_id): perilaku seperti sebelumnya; business_name wajib (422).
+    - Key terikat: hanya boleh menulis ke bisnis terikatnya. Nama lain ditolak (403),
+      key terikat tidak pernah membuat bisnis baru, dan bila business_name tidak
+      dikirim dipakai bisnis terikat.
+    """
+    from app.models.business import Business
+
+    clean_name = business_name.strip() if business_name else ""
+
+    if api_key.business_id is None:
+        if not clean_name:
+            raise HTTPException(status_code=422, detail="business_name wajib diisi.")
+        return clean_name
+
+    bound = db.get(Business, api_key.business_id)
+    if bound is None or bound.deleted_at is not None:
+        raise HTTPException(
+            status_code=403, detail="Bisnis yang terikat ke API key tidak ditemukan."
+        )
+
+    if clean_name and clean_name != bound.name:
+        raise HTTPException(
+            status_code=403,
+            detail=f"API key ini terikat ke bisnis '{bound.name}' dan tidak boleh menulis ke bisnis lain.",
+        )
+
+    # Engine mencari bisnis lewat NAMA. Pastikan nama itu hanya cocok dengan satu baris
+    # (termasuk bisnis di Sampah), supaya upload tidak mendarat di bisnis yang salah.
+    same_name = db.query(Business).filter(Business.name == bound.name).count()
+    if same_name != 1:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Ada lebih dari satu bisnis bernama '{bound.name}' (termasuk di Sampah). "
+            "Upload dihentikan agar tidak menulis ke bisnis yang salah.",
+        )
+    return bound.name
+
+
 @router.post("/upload", response_model=BatchOut, status_code=201)
 async def ingest_upload(
-    business_name: str = Form(..., description="Nama business/klien, misal 'Resto Padang Jaya'"),
     source_name: str = Form(..., description="Nama source, misal 'Toko Kelontong'"),
     dataset_name: str = Form(..., description="Nama dataset, misal 'Orders'"),
     file: UploadFile = FastAPIFile(..., description="File .csv atau .xlsx"),
+    business_name: str | None = Form(None, description="Nama business/klien, misal 'Resto Padang Jaya'"),
     business_category: str = Form(
         "lainnya",
         description=f"Kategori business, salah satu dari: {', '.join(BUSINESS_CATEGORIES)}. "
@@ -80,7 +125,8 @@ async def ingest_upload(
     tidak didukung, business_category bukan dari daftar yang diizinkan, atau
     API key tidak valid) yang mengembalikan error HTTP.
     """
-    return await _run_ingest(business_name, source_name, dataset_name, file, business_category, db)
+    resolved_business_name = _resolve_business_for_api_key(db, api_key, business_name)
+    return await _run_ingest(resolved_business_name, source_name, dataset_name, file, business_category, db)
 
 
 @router.post("/upload/dashboard", response_model=BatchOut, status_code=201)
@@ -166,9 +212,9 @@ async def _run_mixed_ingest(
 
 @router.post("/upload/mixed", response_model=list[MixedIngestResultItem], status_code=201)
 async def ingest_upload_mixed(
-    business_name: str = Form(..., description="Nama business/klien"),
     dataset_name: str = Form(..., description="Nama dataset, misal 'Transaksi Harian'"),
     file: UploadFile = FastAPIFile(..., description="File .csv atau .xlsx berisi kolom channel"),
+    business_name: str | None = Form(None, description="Nama business/klien"),
     business_category: str = Form("lainnya"),
     db: Session = Depends(get_db),
     api_key=Depends(require_api_key),
@@ -185,7 +231,8 @@ async def ingest_upload_mixed(
     korup/kosong -- di sini splitnya sendiri belum sempat menghasilkan
     apa-apa untuk dicatat).
     """
-    return await _run_mixed_ingest(business_name, dataset_name, file, business_category, db)
+    resolved_business_name = _resolve_business_for_api_key(db, api_key, business_name)
+    return await _run_mixed_ingest(resolved_business_name, dataset_name, file, business_category, db)
 
 
 @router.post("/upload/mixed/dashboard", response_model=list[MixedIngestResultItem], status_code=201)

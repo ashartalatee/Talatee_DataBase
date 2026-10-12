@@ -1,8 +1,9 @@
-﻿import uuid
+import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -12,6 +13,9 @@ from app.ingestion.clean_rows import clean_rows
 from app.security.dashboard_session import require_dashboard_session
 from app.models import Batch
 from app.models import File as FileModel
+from app.models.business import Business
+from app.models.dataset import Dataset
+from app.models.source import Source
 from app.schemas.batch import BatchDetailOut, BatchOut, FileOut
 from app.schemas.trash import DeletionLogOut, PurgeRequest
 from app.services import trash as trash_service
@@ -23,9 +27,18 @@ router = APIRouter(tags=["batches"], dependencies=[Depends(require_dashboard_ses
 @router.get("/batches", response_model=list[BatchOut])
 def list_batches(
     dataset_id: Optional[uuid.UUID] = None,
+    include_demo: bool = Query(False),
     db: Session = Depends(get_db),
 ):
     query = trash_service.visible_batches_query(db)
+    if not include_demo:
+        demo_datasets = (
+            select(Dataset.id)
+            .join(Source, Dataset.source_id == Source.id)
+            .join(Business, Source.business_id == Business.id)
+            .where(Business.is_demo.is_(True))
+        )
+        query = query.filter(Batch.dataset_id.not_in(demo_datasets))
     if dataset_id is not None:
         query = query.filter(Batch.dataset_id == dataset_id)
     return query.order_by(Batch.started_at.desc()).all()
