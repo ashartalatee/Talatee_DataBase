@@ -78,5 +78,3 @@ app.include_router(showcase_health.router)
 from app.api.routes import stage
 app.include_router(stage.router)
 
-from app.api.routes import showcase_control
-app.include_router(showcase_control.router)
