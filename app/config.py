@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     waha_url: str = ""
     waha_api_key: str = ""
     hermes_api_key: str = ""
+    groq_api_key: str = ""
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
 
 
 # Instance singleton, di-import di tempat lain: `from app.config import settings`

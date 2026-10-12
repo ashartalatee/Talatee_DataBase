@@ -19,9 +19,11 @@ function pickMime() {
 }
 
 function statusLabel(j) {
+  if (j.status === 'pending' && j.error)
+    return `Percobaan kirim gagal, dicoba lagi sekitar ${hhmm(j.send_at)}`
   if (j.status === 'pending') return `Hook dikirim ke Telegram sekitar ${hhmm(j.send_at)}`
   if (j.status === 'processing') return 'Hook sedang disusun'
-  if (j.status === 'sent') return `Terkirim ke Telegram ${hhmm(j.sent_at)}`
+  if (j.status === 'sent') return `Terkirim ke Telegram ${hhmm(j.sent_at)} ? ketuk untuk lihat hook`
   return 'Gagal dikirim, akan dicek manual'
 }
 
@@ -59,6 +61,18 @@ export default function KompasVoiceJournal({ onSaved }) {
       }
     }
   }, [])
+
+  useEffect(() => {
+    const active = journals.some((j) => j.status === 'pending' || j.status === 'processing')
+    if (!active) return undefined
+    const id = setInterval(loadJournals, 60000)
+    const onFocus = () => loadJournals()
+    window.addEventListener('focus', onFocus)
+    return () => {
+      clearInterval(id)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [journals])
 
   async function start() {
     setError('')

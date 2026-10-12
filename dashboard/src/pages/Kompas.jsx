@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { api } from '../api/client'
 import KompasIdeaBank from '../components/KompasIdeaBank'
+import KompasVoiceJournal from '../components/KompasVoiceJournal'
 import KompasParkir from '../components/KompasParkir'
 import KompasReview from '../components/KompasReview'
 import KompasBacaan from '../components/KompasBacaan'
@@ -138,6 +139,17 @@ export default function Kompas() {
       cancelled = true
     }
   }, [])
+
+  async function refreshLog() {
+    try {
+      const server = await api.getKompasCheckins()
+      const merged = { ...EMPTY, ...server }
+      setLog(merged)
+      writeCache(merged, true)
+    } catch {
+      /* centang akan muncul di muatan berikutnya */
+    }
+  }
 
   async function toggle(id) {
     const has = log[id].includes(today)
@@ -270,6 +282,9 @@ export default function Kompas() {
         })}
       </section>
 
+      <Reveal>
+        <KompasVoiceJournal onSaved={refreshLog} />
+      </Reveal>
       <Reveal>
         <KompasIdeaBank />
       </Reveal>

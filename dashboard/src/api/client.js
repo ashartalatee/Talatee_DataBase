@@ -101,6 +101,22 @@ export const api = {
   listSourcesTrusted: () => request('/sources?trust=trusted'),
   getShowcaseHealth: () => request('/showcase/health'),
   getStageSummary: () => request('/stage/summary'),
+  // Kendali demo Panggung (laci Kendali di /stage). Semua hanya menyentuh bisnis demo di backend.
+  stageTrigger: () => request('/showcase/simulator/trigger', { method: 'POST' }),
+  stageBackfill: () => request('/showcase/demo/backfill', { method: 'POST' }),
+  stageUpload: (file, { promote = true } = {}) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('promote', String(promote))
+    return request('/showcase/demo/upload', { method: 'POST', body: formData })
+  },
+  stageResetPreview: () => request('/showcase/reset/preview'),
+  stageReset: () =>
+    request('/showcase/reset', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: true }),
+    }),
   listDatasets: (trust) => request(trust ? `/datasets?trust=${trust}` : '/datasets'),
   getDataset: (id) => request(`/datasets/${id}`),
   listBatches: (datasetId) =>
@@ -272,6 +288,19 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   deleteKompasReading: (id) => request(`/kompas/reading/${id}`, { method: 'DELETE' }),
+  listKompasJournals: () => request('/kompas/journals'),
+  transcribeKompasJournal: (blob) => {
+    const fd = new FormData()
+    fd.append('file', blob, 'rekaman')
+    return request('/kompas/journals/transcribe', { method: 'POST', body: fd })
+  },
+  createKompasJournal: (payload) =>
+    request('/kompas/journals', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+  deleteKompasJournal: (id) => request(`/kompas/journals/${id}`, { method: 'DELETE' }),
 
   listProjects: () => request('/projects'),
   createProject: (payload) =>
