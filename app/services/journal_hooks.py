@@ -26,8 +26,13 @@ Aturan:
 - Setiap hook harus berpijak pada detail SPESIFIK di jurnal (angka, kejadian, kesalahan, penemuan).
   Dilarang hook generik yang bisa dipakai siapa saja.
 - Pakai gaya bahasa Ashar yang santai dan jujur. Pertahankan frasa khasnya.
-- Lima hook memakai lima pola berbeda: curiosity gap, contrarian, cerita kegagalan,
-  hasil berangka, yang tidak diceritakan orang lain.
+- Pilih pola yang cocok dengan isi jurnal: curiosity gap, contrarian, cerita kegagalan,
+  hasil berangka, atau yang tidak diceritakan orang lain. Pola boleh berulang. Jangan pakai
+  pola cerita kegagalan kalau jurnal tidak menyebut kegagalan.
+- Hook dan alasan TIDAK BOLEH mengklaim kejadian, angka, kesalahan, atau rahasia yang tidak
+  disebut di jurnal. Kalau jurnal tipis, buat hook yang jujur dan sempit, bukan dilebih-lebihkan.
+- Nama proyek yang benar: Talatee. Pakai ejaan benar di hook dan alasan; kutipan tetap
+  disalin persis dari jurnal.
 - Jangan mengulang hook dari 7 hari terakhir (daftar diberikan).
 - "kutipan" WAJIB disalin persis dari jurnal (3 sampai 20 kata), tanpa diubah.
 - Jangan menambah fakta yang tidak ada di jurnal.
