@@ -5,7 +5,7 @@
 //           C = laci kendali, P = jeda simulasi (mock), Esc = tutup laci.
 // Mode siaran menggambar kanvas tetap (16:9 = 1920x1080, 9:16 = 1080x1920) yang diskalakan pas ke jendela.
 // URL: ?siaran ?potret ?lanskap ?otomatis ?mock ?ikuti
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Upload, Database, ShieldCheck, MessageSquare, FileText, Sparkles } from 'lucide-react'
 import { useStageData } from './useStageData'
 import StageControls from './StageControls'
@@ -36,6 +36,21 @@ function useNow(ms = 1000) {
   const [now, setNow] = useState(Date.now())
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), ms); return () => clearInterval(id) }, [ms])
   return now
+}
+
+// Mendeteksi nilai yang berubah (cap waktu "last" dari data) untuk memicu kilatan node dan paket data.
+function useTicks(vals) {
+  const prev = useRef(null)
+  const [ticks, setTicks] = useState(() => vals.map(() => 0))
+  const sig = JSON.stringify(vals.map((v) => (v === undefined ? 'u' : v)))
+  useEffect(() => {
+    const p = prev.current
+    if (p && p.some((v) => v !== undefined)) {
+      setTicks((t) => t.map((n, i) => (vals[i] !== p[i] ? n + 1 : n)))
+    }
+    prev.current = vals
+  }, [sig]) // eslint-disable-line react-hooks/exhaustive-deps
+  return ticks
 }
 
 // Ukuran kanvas siaran dan skala supaya pas di jendela (letterbox bila rasionya beda).
@@ -71,6 +86,9 @@ export default function Stage() {
 
   const agentStep = data && data.agent && data.agent.status === 'working' ? data.agent.step : null
   const agentBatch = data && data.agent ? data.agent.batchId : null
+  const fl = data && data.flow
+  const ticks = useTicks([fl ? fl.file.last : undefined, fl ? fl.batch.last : undefined, fl ? fl.trust.last : undefined, fl ? fl.question.last : undefined, fl ? fl.answer.last : undefined])
+  const working = { batch: agentStep === 'read' || agentStep === 'clean', trust: agentStep === 'validate' || agentStep === 'trust' }
 
   // Agen memandu halaman: baca/bersihkan -> Gudang Data; validasi/percaya/insight -> Data Bersih.
   useEffect(() => {
@@ -188,12 +206,14 @@ export default function Stage() {
         {error && <p className="st-err" role="alert">{error}</p>}
 
         <section className="st-pipe" aria-label="Alur data">
-          {NODES.map(({ key, title, sub, Icon }) => {
+          {NODES.map(({ key, title, sub, Icon }, idx) => {
             const [val, last] = nodeVal[key]
             const off = !hermesOn && (key === 'question' || key === 'answer')
             return (
-              <div key={key} className={`st-node${last && now - last < 2500 ? ' pulse' : ''}`}>
+              <div key={key} className={`st-node${last && now - last < 2500 ? ' pulse' : ''}${working[key] ? ' work' : ''}`}>
                 <span className="st-ic"><Icon size={20} strokeWidth={1.75} /></span>
+                {ticks[idx] > 0 && <span key={ticks[idx]} className="st-flash" aria-hidden="true" />}
+                {idx < NODES.length - 1 && <i className="st-edge" aria-hidden="true">{ticks[idx + 1] > 0 && <b key={ticks[idx + 1]} className="st-packet" />}</i>}
                 <b className="st-nt">{title}</b>
                 <div className="st-n">{val}</div>
                 <small className="st-nsub">{sub}</small>
