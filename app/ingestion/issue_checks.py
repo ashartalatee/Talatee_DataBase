@@ -43,6 +43,33 @@ def _date_valid(v: str, pattern: str) -> bool:
         return False
 
 
+TIME_HINTS = ("waktu", "jam", "time", "pukul")
+_DATE_STRICT = ("tanggal", "tgl", "date")
+_CLOCK = r"\d{1,2}:\d{2}(?::\d{2})?"
+
+
+def _time_valid(v: str) -> bool:
+    """Jam sah: HH:MM atau HH:MM:SS, jam 0-23, menit dan detik 0-59."""
+    if not re.fullmatch(_CLOCK, v):
+        return False
+    parts = [int(x) for x in v.split(":")]
+    return parts[0] < 24 and all(x < 60 for x in parts[1:])
+
+
+def _is_time_col(name: str) -> bool:
+    """Kolom yang namanya menunjuk ke jam (waktu/jam), bukan ke tanggal."""
+    n = name.strip().lower()
+    return any(h in n for h in TIME_HINTS) and not any(h in n for h in _DATE_STRICT)
+
+
+def _split_clock(v: str):
+    """Pisahkan jam di ujung nilai: '2026-03-01 09:18' -> ('2026-03-01', '09:18'). Tanpa jam yang sah: (v, None)."""
+    m = re.fullmatch(r"(.+?)[ T](" + _CLOCK + ")", v)
+    if m and _time_valid(m.group(2)):
+        return m.group(1), m.group(2)
+    return v, None
+
+
 def check_rows(columns: list[str], rows: list[list[str]]) -> dict:
     issues = []
 
@@ -70,8 +97,8 @@ def check_rows(columns: list[str], rows: list[list[str]]) -> dict:
     for j, k in enumerate(kinds):
         if k == "date":
             pats = Counter(
-                _date_pattern(r[j].strip()) for r in rows
-                if j < len(r) and r[j].strip() and _date_pattern(r[j].strip())
+                _date_pattern(_split_clock(r[j].strip())[0]) for r in rows
+                if j < len(r) and r[j].strip() and _date_pattern(_split_clock(r[j].strip())[0])
             )
             if pats:
                 dominant[j] = pats.most_common(1)[0][0]
@@ -99,11 +126,14 @@ def check_rows(columns: list[str], rows: list[list[str]]) -> dict:
 
             kind = kinds[j]
             if kind == "date":
-                pat = _date_pattern(s)
+                core, clock = _split_clock(s)
+                if clock is None and _is_time_col(col) and _time_valid(s):
+                    continue  # jam saja pada kolom waktu/jam: sah, bukan tanggal
+                pat = _date_pattern(core)
                 if pat is None:
                     add(i, col, "tanggal_tidak_dikenali", "error", "Format tanggal tidak dikenali", v)
                 else:
-                    if not _date_valid(s, pat):
+                    if not _date_valid(core, pat):
                         add(i, col, "tanggal_mustahil", "error", "Tanggal tidak mungkin ada", v)
                     if j in dominant and pat != dominant[j]:
                         add(i, col, "format_tanggal_campur", "warning",
