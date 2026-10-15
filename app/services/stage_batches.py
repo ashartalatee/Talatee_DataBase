@@ -4,7 +4,8 @@ Murni (tanpa database) supaya mudah dites.
 Pemetaan ke status yang dipahami tampilan Gudang Data:
   masuk     : baru masuk, belum diolah
   diproses  : sedang berjalan (baru saja berubah, dalam ACTIVE_WINDOW_MS)
-  bersih    : lolos validasi (menunggu disetujui) atau sudah terpercaya
+  siap      : lolos validasi, menunggu persetujuan (Tandai terpercaya)
+  bersih    : sudah terpercaya
   tinjau    : gagal atau perlu ditinjau
 Status kepercayaan asli tetap dikirim terpisah (field "trust") supaya layar bisa menulis
 "Siap diverifikasi" untuk VALIDATING dan "Terpercaya" untuk TRUSTED dengan jujur.
@@ -25,5 +26,5 @@ def gudang_status(batch_status: str, trust: str, age_ms: int) -> str:
     if age_ms <= ACTIVE_WINDOW_MS:
         return "diproses" if trust in ("INGESTED", "VALIDATING") else "masuk"
     if trust == "VALIDATING":
-        return "bersih"
+        return "siap"
     return "masuk"

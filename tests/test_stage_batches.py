@@ -16,5 +16,5 @@ def test_trusted_and_needs_review_do_not_depend_on_age():
 def test_recent_work_shows_as_processing_but_stale_does_not_spin_forever():
     assert gudang_status("success", "INGESTED", 1000) == "diproses"
     assert gudang_status("success", "VALIDATING", 1000) == "diproses"
-    assert gudang_status("success", "VALIDATING", OLD) == "bersih"  # lolos validasi, menunggu disetujui
+    assert gudang_status("success", "VALIDATING", OLD) == "siap"  # lolos validasi, menunggu persetujuan
     assert gudang_status("success", "INGESTED", OLD) == "masuk"

@@ -3,7 +3,7 @@ import { Lock, ArrowRight } from 'lucide-react'
 import { Panel, ago } from './stageUi'
 
 const STATUS = {
-  masuk: ['Masuk', 'b'], diproses: ['Diproses', 'y'], bersih: ['Bersih', 'g'], tinjau: ['Perlu ditinjau', 'r'],
+  masuk: ['Masuk', 'b'], diproses: ['Diproses', 'y'], bersih: ['Bersih', 'g'], siap: ['Siap diverifikasi', 'y'], tinjau: ['Perlu ditinjau', 'r'],
 }
 const LEGEND = [['empty', 'kosong'], ['format', 'format berbeda'], ['dup', 'duplikat']]
 
