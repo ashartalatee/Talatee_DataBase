@@ -309,3 +309,5 @@
 @keyframes st-breathe{0%,100%{box-shadow:0 0 0 transparent}50%{box-shadow:0 0 14px color-mix(in srgb,var(--g) 10%,transparent)}}
 @keyframes st-work{0%,100%{box-shadow:0 0 10px color-mix(in srgb,var(--g) 18%,transparent)}50%{box-shadow:0 0 30px color-mix(in srgb,var(--g) 50%,transparent)}}
 @media (prefers-reduced-motion:reduce){.stage .st-node,.stage .st-edge{animation:none!important}}
+
+.stage .st-edge{background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--g) 55%,transparent) 0 6px,transparent 6px 12px)}
