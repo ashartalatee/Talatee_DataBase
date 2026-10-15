@@ -334,10 +334,10 @@ export function useStageData() {
     if (!p || (!p.datasets && !p.batches)) return 'Tidak ada data demo untuk dihapus.'
     return `Akan dihapus: ${p.datasets} dataset, ${p.batches} batch, ${p.files} file, ${p.transactions} transaksi.`
   }
-  const actions = { trigger: call('trigger'), backfill: call('backfill'), upload: call('upload'), reset: call('reset'), resetPreview }
+  const actions = { trigger: call('trigger'), backfill: call('backfill'), upload: call('upload'), reset: call('reset'), promote: call('promote'), resetPreview }
   const caps = mock
-    ? { trigger: true, backfill: true, upload: true, reset: true, resetPreview: true, auto: true }
-    : { trigger: !!api.stageTrigger, backfill: !!api.stageBackfill, upload: !!api.stageUpload, reset: !!api.stageReset, resetPreview: !!api.stageResetPreview, auto: false }
+    ? { trigger: true, backfill: true, upload: true, reset: true, resetPreview: true, auto: true, promote: false }
+    : { trigger: !!api.stageTrigger, backfill: !!api.stageBackfill, upload: !!api.stageUpload, reset: !!api.stageReset, resetPreview: !!api.stageResetPreview, auto: false, promote: !!api.stagePromote }
 
   return { data, error, mode: MODE, paused, togglePause, actions, caps }
 }

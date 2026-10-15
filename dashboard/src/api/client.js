@@ -111,6 +111,8 @@ export const api = {
     return request('/showcase/demo/upload', { method: 'POST', body: formData })
   },
   stageResetPreview: () => request('/showcase/reset/preview'),
+  getStageBatch: (id) => request(`/stage/batches/${id}`),
+  stagePromote: (id) => request(`/stage/batches/${id}/promote`, { method: 'POST' }),
   stageReset: () =>
     request('/showcase/reset', {
       method: 'POST',

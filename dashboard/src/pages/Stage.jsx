@@ -9,6 +9,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Upload, Database, ShieldCheck, MessageSquare, FileText, Sparkles } from 'lucide-react'
 import { useStageData } from './useStageData'
 import StageControls from './StageControls'
+import StageIntake from './StageIntake'
+import { useBatchDetail, mergeDetail } from './useBatchDetail'
 import StageAgent from './StageAgent'
 import PipeCanvas from './PipeCanvas'
 import StageGudang from './StageGudang'
@@ -80,6 +82,7 @@ export default function Stage() {
   const [range, setRange] = useState(30)
   const [page, setPage] = useState('gudang')
   const [sel, setSel] = useState(null)
+  const [intake, setIntake] = useState(false)
   const [follow, setFollow] = useState(() => flag('siaran') || flag('potret') || flag('lanskap') || flag('ikuti'))
   const cv = useCanvas(siaran, orient)
   const canControl = Object.values(caps).some(Boolean)
@@ -87,6 +90,8 @@ export default function Stage() {
 
   const agentStep = data && data.agent && data.agent.status === 'working' ? data.agent.step : null
   const agentBatch = data && data.agent ? data.agent.batchId : null
+  const selBase = data && data.batches ? (data.batches.find((b) => b.id === sel) || data.batches[0] || null) : null
+  const detail = useBatchDetail(mode === 'api' && selBase ? selBase.id : null)
   const fl = data && data.flow
   const ticks = useTicks([fl ? fl.file.last : undefined, fl ? fl.batch.last : undefined, fl ? fl.trust.last : undefined, fl ? fl.question.last : undefined, fl ? fl.answer.last : undefined])
   const working = { batch: agentStep === 'read' || agentStep === 'clean', trust: agentStep === 'validate' || agentStep === 'trust' }
@@ -114,8 +119,9 @@ export default function Stage() {
       else if (k === 'f') setFollow((v) => !v)
       else if (k === '1' || e.key === 'ArrowLeft') go('gudang')
       else if (k === '2' || e.key === 'ArrowRight') go('bersih')
-      else if (k === 'c' && canControl) setOpen((v) => !v)
-      else if (e.key === 'Escape') setOpen(false)
+      else if (k === 'c' && canControl) { setOpen((v) => !v); setIntake(false) }
+      else if (k === 'u' && caps.upload) { setIntake((v) => !v); setOpen(false) }
+      else if (e.key === 'Escape') { setOpen(false); setIntake(false) }
     }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
@@ -145,11 +151,12 @@ export default function Stage() {
 
   const { flow, trend, categories, channels } = data
   const batches = data.batches || []
+  const waiting = batches.filter((b) => b.trust === 'VALIDATING').length
   const insights = data.insights || []
   const agent = data.agent || { status: 'idle', step: null, label: '', lastDone: false }
   // Tanpa data agen dari backend, garis waktu diisi dari aktivitas (feed) supaya tetap hidup.
   const events = data.events || (data.feed || []).map((f) => ({ t: f.t, kind: 'info', text: f.text, tone: f.tone }))
-  const selected = batches.find((b) => b.id === sel) || batches[0] || null
+  const selected = mergeDetail(batches.find((b) => b.id === sel) || batches[0] || null, detail)
 
   const omzet = sum(trend, 'rev')
   const order = sum(trend, 'ord')
@@ -198,6 +205,11 @@ export default function Stage() {
             </nav>
           </div>
           <div className="st-tags">
+            {caps.upload && !siaran && (
+              <button type="button" className="st-tag st-add" onClick={() => { setIntake(true); setOpen(false) }}>
+                Tambah data{waiting > 0 && <em>{waiting}</em>}
+              </button>
+            )}
             {follow && <span className="st-tag follow"><i className="st-dot" />Agen memandu</span>}
             <span className={`st-tag ${error ? 'bad' : 'live'}`}><i className="st-dot" />{error ? 'Terputus' : 'Live'}</span>
             <span className="st-tag">Data demo</span>
@@ -258,6 +270,7 @@ export default function Stage() {
         </p>
       </div>
 
+      <StageIntake open={intake} onClose={() => setIntake(false)} batches={batches} apiInfo={data.api} actions={actions} caps={caps} siaran={siaran} now={now} />
       {canControl && (
         <StageControls
           open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)}

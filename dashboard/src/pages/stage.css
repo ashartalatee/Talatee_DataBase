@@ -351,3 +351,26 @@
 @keyframes pc-dash{to{stroke-dashoffset:-9}}
 @keyframes pc-run{0%{opacity:1;stroke-dashoffset:9}85%{opacity:1}100%{opacity:0;stroke-dashoffset:-100}}
 @media (prefers-reduced-motion:reduce){.stage .pc *{animation:none!important}}
+
+/* ---- laci Tambah data: unggah manual, antrean persetujuan, status API ---- */
+.stage button.st-add{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font:inherit;color:var(--g);background:transparent;border:1px solid color-mix(in srgb,var(--g) 45%,var(--line));border-radius:99px;padding:3px 12px}
+.stage button.st-add:hover{background:color-mix(in srgb,var(--g) 12%,transparent)}
+.stage .st-add em{font-style:normal;font-size:.8em;font-weight:700;color:#1a1300;background:#f5b942;border-radius:99px;padding:0 7px}
+.stage .st-dz{display:grid;gap:4px;width:100%;text-align:center;cursor:pointer;color:var(--tx);font:inherit;background:radial-gradient(260px 80px at 50% 0,color-mix(in srgb,var(--g) 12%,transparent),transparent 70%),var(--bg);border:1.5px dashed color-mix(in srgb,var(--g) 45%,var(--line));border-radius:var(--rad);padding:20px 14px;transition:border-color .2s}
+.stage .st-dz:hover:not(:disabled){border-color:var(--g)}
+.stage .st-dz:disabled{opacity:.6;cursor:progress}
+.stage .st-dz span{color:var(--mut);font-size:.85em}
+.stage .st-ulog{list-style:none;margin:8px 0 0;padding:0;font-size:.85em;display:grid;gap:4px;color:var(--mut)}
+.stage .st-wl{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.stage .st-wl li{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg)}
+.stage .st-wn{display:grid;min-width:0}
+.stage .st-wn b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stage .st-wn small{color:var(--mut)}
+.stage .st-card{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg);display:grid;gap:4px}
+.stage .st-row{display:flex;justify-content:space-between;gap:10px;font-size:.88em}
+.stage .st-row span{color:var(--mut)}
+.stage .st-mono{font-family:var(--font-display,ui-monospace,monospace)}
+.stage .st-veil{position:fixed;inset:0;z-index:90;display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(3px);border:3px dashed var(--g);margin:14px;border-radius:20px;pointer-events:none}
+.stage .st-veil div{display:grid;gap:6px;text-align:center;font-size:1.4em}
+.stage .st-veil span{color:var(--mut);font-size:.6em}
+.stage .st-toast{position:fixed;left:24px;bottom:24px;z-index:80;max-width:420px;display:grid;gap:4px;background:var(--panel);border:1px solid var(--g);border-radius:12px;padding:10px 14px;font-size:.9em;box-shadow:0 14px 40px #000a}

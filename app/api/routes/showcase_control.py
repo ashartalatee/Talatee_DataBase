@@ -297,6 +297,9 @@ async def reset_demo(
             if source.deleted_at is None:
                 trash_service.trash_source(db, source, deleted_by=username)
             trash_service.purge_source(db, source, deleted_by=username, reason="Reset demo Panggung")
+        from app.models.lab_entry import LabEntry
+        db.query(LabEntry).filter(LabEntry.business_id == business.id).delete(synchronize_session=False)
+        db.commit()
     return ControlResultOut(
         ok=True,
         message=f"Data demo dikosongkan: {counts.datasets} dataset, {counts.batches} batch, {counts.transactions} transaksi",
