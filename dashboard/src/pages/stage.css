@@ -311,3 +311,43 @@
 @media (prefers-reduced-motion:reduce){.stage .st-node,.stage .st-edge{animation:none!important}}
 
 .stage .st-edge{background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--g) 55%,transparent) 0 6px,transparent 6px 12px)}
+
+/* ---- kanvas alur data (PipeCanvas): gerak dipicu data nyata ---- */
+.stage .pc{display:block;background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);padding:4px 8px;overflow:hidden}
+.stage .st-pipe.old{display:none}
+.stage .pc-svg{display:block;width:100%;height:auto}
+.stage .cv-land .pc{max-width:1560px;margin:0 auto;width:100%}
+.stage .cv-port .pc{display:none}
+.stage .cv-port .st-pipe.old{display:grid}
+@media(max-width:1000px){.stage .cv-flow .pc{display:none}.stage .cv-flow .st-pipe.old{display:grid}}
+.stage .pc-dc{fill:var(--line)}
+.stage .pc-nb{fill:var(--bg);stroke:var(--line);stroke-width:1.2;transition:stroke .3s}
+.stage .pc-n.on .pc-nb{stroke:var(--g)}
+.stage .pc-ng{fill:none;stroke:var(--g);stroke-width:1.6;opacity:0;filter:drop-shadow(0 0 12px color-mix(in srgb,var(--g) 65%,transparent));transition:opacity .35s}
+.stage .pc-n.on .pc-ng{opacity:1;animation:pc-glow 1.4s ease-in-out infinite}
+.stage .pc-ic{fill:color-mix(in srgb,var(--g) 10%,var(--bg));stroke:color-mix(in srgb,var(--g) 55%,var(--line))}
+.stage .pc-n svg{color:var(--g)}
+.stage .pc-ring{fill:none;stroke:var(--g);stroke-width:1.5;opacity:0;transform-box:fill-box;transform-origin:center}
+.stage .pc-n.on .pc-ring{animation:pc-ring 1.4s ease-out infinite}
+.stage .pc-fl{fill:none;stroke:var(--g);stroke-width:2;opacity:0;transform-box:fill-box;transform-origin:center;animation:pc-fl .9s ease-out}
+.stage .pc-pl{fill:var(--g);font:700 12px var(--font-display,ui-monospace,monospace);opacity:0;animation:pc-pl 1.2s ease-out}
+.stage .pc-num{fill:var(--tx);font:600 28px var(--font-display,ui-monospace,monospace);font-variant-numeric:tabular-nums}
+.stage .pc-t{fill:var(--tx);font-weight:700;font-size:13.5px}
+.stage .pc-s,.stage .pc-ag{fill:var(--mut);font-size:11.5px}
+.stage .pc-n.on .pc-ag{fill:var(--g)}
+.stage .pc-sp{stroke:var(--line)}
+.stage .pc-track{fill:var(--line)}
+.stage .pc-dot{fill:var(--mut)}
+.stage .pc-n.on .pc-dot{fill:var(--g);animation:pc-bl .7s steps(2) infinite}
+.stage .pc-n.off{opacity:.55}
+.stage .pc-w{fill:none;stroke:color-mix(in srgb,var(--g) 40%,var(--line));stroke-width:2;stroke-dasharray:2 7;stroke-linecap:round;animation:pc-dash 1.4s linear infinite}
+.stage .pc-tv{fill:none;stroke:color-mix(in srgb,var(--g) 70%,#fff);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:9 91;stroke-dashoffset:9;filter:drop-shadow(0 0 7px var(--g));animation:pc-run .9s cubic-bezier(.4,0,.2,1) forwards}
+.stage .pc-po{fill:var(--bg);stroke:color-mix(in srgb,var(--g) 40%,var(--line));stroke-width:1.6}
+@keyframes pc-glow{50%{opacity:.55}}
+@keyframes pc-ring{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(1.9)}}
+@keyframes pc-fl{0%{opacity:.9;transform:scale(1)}100%{opacity:0;transform:scale(1.06)}}
+@keyframes pc-pl{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-14px)}}
+@keyframes pc-bl{to{opacity:.25}}
+@keyframes pc-dash{to{stroke-dashoffset:-9}}
+@keyframes pc-run{0%{opacity:1;stroke-dashoffset:9}85%{opacity:1}100%{opacity:0;stroke-dashoffset:-100}}
+@media (prefers-reduced-motion:reduce){.stage .pc *{animation:none!important}}

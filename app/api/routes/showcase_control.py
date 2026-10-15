@@ -242,7 +242,7 @@ async def upload(
     result = await _ingest_and_trust(
         db, business,
         source_name=source,
-        dataset_name=f"Upload {date.today():%Y-%m-%d}",
+        dataset_name=f"Upload {filename[:70]} {datetime.now():%H%M%S}",
         filename=filename,
         data=data,
         promote=promote,

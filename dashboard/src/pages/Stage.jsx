@@ -10,6 +10,7 @@ import { Upload, Database, ShieldCheck, MessageSquare, FileText, Sparkles } from
 import { useStageData } from './useStageData'
 import StageControls from './StageControls'
 import StageAgent from './StageAgent'
+import PipeCanvas from './PipeCanvas'
 import StageGudang from './StageGudang'
 import StageBersih from './StageBersih'
 import { flag, sum, ago } from './stageUi'
@@ -94,8 +95,8 @@ export default function Stage() {
   useEffect(() => {
     if (!follow || !agentStep) return
     setSel(agentBatch)
-    setPage(agentStep === 'read' || agentStep === 'clean' ? 'gudang' : 'bersih')
-  }, [follow, agentStep, agentBatch])
+    setPage(hasPages && (agentStep === 'read' || agentStep === 'clean') ? 'gudang' : 'bersih')
+  }, [follow, agentStep, agentBatch, hasPages])
 
   // Bila backend belum menyediakan data gudang (mode API saat ini), mulai dari halaman Data Bersih.
   useEffect(() => { if (data && !data.batches) setPage('bersih') }, [!!data, hasPages]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -205,7 +206,8 @@ export default function Stage() {
         </header>
         {error && <p className="st-err" role="alert">{error}</p>}
 
-        <section className="st-pipe" aria-label="Alur data">
+        <PipeCanvas val={nodeVal} ticks={ticks} working={working} now={now} hermesOn={hermesOn} ago={ago} trustParts={TRUST.map(([k, , c]) => ({ c, n: flow.trust[k] || 0 }))} />
+        <section className="st-pipe old" aria-label="Alur data">
           {NODES.map(({ key, title, sub, Icon }, idx) => {
             const [val, last] = nodeVal[key]
             const off = !hermesOn && (key === 'question' || key === 'answer')

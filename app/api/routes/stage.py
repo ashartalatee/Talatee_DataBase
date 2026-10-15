@@ -12,15 +12,20 @@ Aturan yang dijaga di sini:
 "Channel" = nama Source (mis. "Shopee", "Upload manual"). Stok dan log Hermes belum punya
 tabel di backend, jadi dikembalikan kosong (hermes_connected = false).
 """
+import uuid
 from datetime import date, datetime, timedelta
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models import Batch, Business, CoreTransaction, Dataset, File as FileModel, Source
 from app.schemas.stage import (
+    AgentState,
+    ApiInfo,
+    BatchItem,
+    EventItem,
     FeedItem,
     FlowCount,
     FlowTrust,
@@ -29,6 +34,10 @@ from app.schemas.stage import (
     StageSummaryOut,
     TrendDay,
 )
+from app.services.stage_activity import ActivityRow, build_activity
+from app.services.stage_batches import gudang_status
+from app.api.routes import batches as batches_routes, core as core_routes
+from app.models.api_key import ApiKey
 from app.security.dashboard_session import require_dashboard_session
 
 router = APIRouter(
@@ -137,13 +146,13 @@ def get_stage_summary(db: Session = Depends(get_db)):
     # --- aktivitas terbaru: dari batch demo, tanpa pesan galat mentah ---
     feed = []
     recent = (
-        _batches(db, Batch, Dataset.trust_status, FileModel.filename)
+        _batches(db, Batch, Dataset.trust_status, FileModel.filename, Dataset.updated_at, Source.name)
         .outerjoin(FileModel, FileModel.batch_id == Batch.id)
         .order_by(Batch.started_at.desc())
         .limit(15)
         .all()
     )
-    for batch, status, filename in recent:
+    for batch, status, filename, ds_updated, channel in recent:
         name = filename or "file"
         if batch.status == "failed":
             text, tone = f"{name} gagal diproses", "y"
@@ -151,6 +160,45 @@ def get_stage_summary(db: Session = Depends(get_db)):
             text = f"{name}: {batch.records_saved} baris, {_TRUST_LABEL.get(status, str(status).lower())}"
             tone = _TRUST_TONE.get(status, "b")
         feed.append(FeedItem(t=_ms(batch.started_at) or 0, text=text, tone=tone))
+
+    # --- kejadian dan langkah agen: diturunkan dari status batch dan dataset yang nyata ---
+    now_ms = int(datetime.now().timestamp() * 1000)
+    events, agent = build_activity(
+        [
+            ActivityRow(
+                batch_id=str(batch.id), dataset_id=str(batch.dataset_id), filename=filename or "file",
+                channel=channel, batch_status=batch.status, records=int(batch.records_saved or 0),
+                trust=status, started_ms=_ms(batch.started_at) or 0,
+                finished_ms=_ms(batch.finished_at), updated_ms=_ms(ds_updated),
+            )
+            for batch, status, filename, ds_updated, channel in recent
+        ],
+        now_ms,
+    )
+
+    # --- daftar file Gudang Data (hanya bisnis demo) dan info koneksi API ---
+    batches = [
+        BatchItem(
+            id=str(b.id), file=filename or "file", channel=channel, rows=int(b.records_saved or 0),
+            status=gudang_status(b.status, status, now_ms - max(_ms(b.started_at) or 0, _ms(ds_updated) or 0)),
+            trust=status or "", t=_ms(b.started_at) or 0,
+        )
+        for b, status, filename, ds_updated, channel in recent
+    ]
+    demo_biz = db.query(Business.id).filter(Business.is_demo.is_(True), Business.deleted_at.is_(None)).first()
+    key = (
+        db.query(ApiKey)
+        .filter(ApiKey.business_id == demo_biz[0], ApiKey.status == "active")
+        .order_by(ApiKey.created_at.desc())
+        .first()
+        if demo_biz
+        else None
+    )
+    api_info = ApiInfo(
+        configured=key is not None,
+        key_prefix=key.key_prefix if key else None,
+        last_used=_ms(key.last_used_at) if key else None,
+    )
 
     return StageSummaryOut(
         flow=StageFlow(
@@ -166,5 +214,41 @@ def get_stage_summary(db: Session = Depends(get_db)):
         low_stock=[],
         hermes=[],
         feed=feed,
+        events=events,
+        agent=agent,
+        batches=batches,
+        api=api_info,
         hermes_connected=False,
     )
+
+
+def _demo_batch_or_404(db: Session, batch_id: uuid.UUID) -> Batch:
+    """Batch harus milik bisnis demo yang tidak di Sampah. Batch bisnis lain diperlakukan seperti tidak ada."""
+    batch = _batches(db, Batch).filter(Batch.id == batch_id).first()
+    if batch is None:
+        raise HTTPException(status_code=404, detail="Batch demo tidak ditemukan")
+    return batch
+
+
+@router.get("/batches/{batch_id}")
+def get_stage_batch(batch_id: uuid.UUID, db: Session = Depends(get_db)):
+    """Isi mentah, laporan masalah, dan versi bersih satu batch DEMO (read-only), memakai fungsi yang sudah ada."""
+    batch = _demo_batch_or_404(db, batch_id)
+    return {
+        "dataset_id": str(batch.dataset_id),
+        "raw": batches_routes.get_batch_rows(batch_id, 40, db),
+        "issues": batches_routes.get_batch_issues(batch_id, db),
+        "clean": batches_routes.get_batch_clean(batch_id, db),
+    }
+
+
+@router.post("/batches/{batch_id}/promote")
+def promote_stage_batch(batch_id: uuid.UUID, db: Session = Depends(get_db)):
+    """Tandai dataset batch DEMO ini terpercaya lewat jalur dan aturan yang sama (promote_dataset)."""
+    batch = _demo_batch_or_404(db, batch_id)
+    try:
+        core_routes.get_dataset_quality(batch.dataset_id, db)  # segarkan status dari hasil validasi terbaru
+        core_routes.promote_dataset(batch.dataset_id, db)
+    except HTTPException:
+        raise HTTPException(status_code=409, detail="Belum bisa ditandai terpercaya: masih ada masalah yang perlu ditinjau.") from None
+    return {"ok": True, "trust_status": "TRUSTED"}
