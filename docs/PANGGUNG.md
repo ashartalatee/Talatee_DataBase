@@ -3,7 +3,7 @@
 > Dokumen hidup. Bagian bertanda **[TETAP]** tidak diubah tanpa catatan keputusan tertulis (lihat Bagian 10).
 > Bagian lain boleh berkembang. Setiap perubahan dicatat di Bagian 12.
 >
-> **Versi 1.0 · 15 Oktober 2026 · Pemilik: Ashar (Talatee)**
+> **Versi 1.1 · 15 Oktober 2026 · Pemilik: Ashar (Talatee)**
 
 ---
 
@@ -116,7 +116,7 @@ api:      { configured, key_prefix, last_used }
 | batch `running` | Diproses | |
 | `INGESTED` baru berubah (≤45 dtk) | Diproses | |
 | `VALIDATING` baru berubah (≤45 dtk) | Diproses | |
-| `VALIDATING` lama | **Siap diverifikasi** (target) | Saat ini masih tampil "Bersih". Lihat Bagian 8. |
+| `VALIDATING` lama | **Siap diverifikasi** | Sejak v1.1. |
 | `NEEDS_REVIEW` atau batch `failed` | Perlu ditinjau | Tidak dihitung ke omzet |
 | `TRUSTED` | Terpercaya | Satu-satunya yang dihitung ke omzet |
 
@@ -190,6 +190,7 @@ Segala hal yang menyentuh P1 sampai P10, kontrak di Bagian 3, aturan kepercayaan
 - Laci "Tambah data": unggah manual (pilih file, atau seret ke mana saja), antrean persetujuan dengan "Tandai terpercaya", status koneksi API.
 - Endpoint detail dan promote khusus bisnis demo.
 - Bisnis demo "Skincare Demo" dan kunci API terikat sudah ada di database.
+- Pemeriksa kualitas baris menerima kolom jam dan tanggal-jam gabungan; versi bersih tidak lagi mengarantina semua baris pada file seperti itu.
 - Reset demo ikut membersihkan entri Laboratorium milik bisnis demo.
 - Tes: 9 lulus (tes baru ikut terhitung). Lint: 0 galat.
 
@@ -202,8 +203,8 @@ Segala hal yang menyentuh P1 sampai P10, kontrak di Bagian 3, aturan kepercayaan
 - Pelindung duplikat antar file.
 
 ### Masalah yang diketahui
-1. **Label "Bersih" untuk file yang belum disetujui.** Status `VALIDATING` lama tampil "Bersih", padahal belum terpercaya. Targetnya "Siap diverifikasi". (Melanggar semangat P4.)
-2. **Kolom `waktu` ditandai "format berbeda" di semua baris** pada file contoh. Kemungkinan pemeriksa format tanggal salah mengenali kolom jam. Perlu diperiksa di `app/ingestion/issue_checks.py` sebelum live.
+1. ~~Label "Bersih" untuk file yang belum disetujui.~~ **Selesai (v1.1):** status `VALIDATING` lama kini tampil "Siap diverifikasi".
+2. ~~Kolom `waktu` ditandai "format berbeda" di semua baris.~~ **Selesai (v1.1):** `waktu` termasuk petunjuk kolom tanggal, sehingga nilai jam (`09:18`) dianggap tanggal salah dan seluruh baris masuk karantina. `issue_checks.py` kini menerima jam pada kolom waktu/jam, dan tanggal-jam gabungan.
 3. **Database ada di Neon (cloud).** Respons Postgres tercatat 1,1 sampai 1,7 detik di Showcase. Ringkasan Panggung menjalankan beberapa query tiap 3 detik, jadi animasi bisa terlambat muncul.
 4. **Server Hermes berstatus Mati** di Showcase.
 5. Tabel Data mentah hanya memuat 40 baris pertama.
@@ -217,9 +218,9 @@ Segala hal yang menyentuh P1 sampai P10, kontrak di Bagian 3, aturan kepercayaan
 Setiap fase punya gerbang. Fase berikutnya baru dimulai bila gerbangnya terpenuhi.
 
 ### Fase 0: Mantapkan sebelum live
-- Label "Siap diverifikasi" menggantikan "Bersih".
-- Periksa sebab kolom `waktu` ditandai.
-- Cache ringkasan singkat di server dan perlambat polling saat tidak ada aktivitas.
+- [x] Label "Siap diverifikasi" menggantikan "Bersih".
+- [x] Sebab kolom `waktu` ditandai diperiksa dan diperbaiki.
+- [ ] Cache ringkasan singkat di server dan perlambat polling saat tidak ada aktivitas (bila respons masih di atas 1 detik).
 - Latihan penuh: reset → isi data → unggah → setujui → omzet bergerak.
 - **Gerbang:** satu latihan live tanpa kejutan, direkam, dan lolos daftar periksa Bagian 11.
 
@@ -294,6 +295,7 @@ Format: **ID · tanggal · keputusan · alasan · konsekuensi.** Keputusan baru 
 | Versi | Tanggal | Perubahan |
 |---|---|---|
 | 1.0 | 15 Okt 2026 | Piagam pertama: prinsip, kontrak, status, peta jalan, keputusan D-001 sampai D-008. |
+| 1.1 | 15 Okt 2026 | Label "Siap diverifikasi" dan perbaikan kolom jam (`issue_checks.py`) selesai; Bagian 4, 8, dan 9 diperbarui. |
 
 ---
 
