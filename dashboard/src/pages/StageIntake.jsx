@@ -11,7 +11,7 @@ const friendly = (e) => {
 }
 const hasFiles = (e) => !!(e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files'))
 
-export default function StageIntake({ open, onClose, batches, apiInfo, actions, caps, siaran, now }) {
+export default function StageIntake({ open, onClose, batches, waitingTotal = 0, apiInfo, actions, caps, siaran, now }) {
   const [log, setLog] = useState([])
   const [busy, setBusy] = useState(false)
   const [auto, setAuto] = useState(false)
@@ -100,6 +100,7 @@ export default function StageIntake({ open, onClose, batches, apiInfo, actions, 
   }
 
   const waiting = batches.filter((b) => b.trust === 'VALIDATING')
+  const waitingAll = Math.max(waitingTotal, waiting.length)
   const held = batches.filter((b) => b.trust === 'NEEDS_REVIEW')
 
   return (
@@ -140,7 +141,7 @@ export default function StageIntake({ open, onClose, batches, apiInfo, actions, 
             <p className="st-dsub">Unggah belum tersedia di backend ini.</p>
           )}
 
-          <h3>Menunggu persetujuan{waiting.length > 0 ? ` (${waiting.length})` : ''}</h3>
+          <h3>Menunggu persetujuan{waitingAll > 0 ? ` (${waitingAll})` : ''}</h3>
           {waiting.length === 0 ? (
             <p className="st-dsub">Tidak ada file yang menunggu.</p>
           ) : (
@@ -155,6 +156,7 @@ export default function StageIntake({ open, onClose, batches, apiInfo, actions, 
               ))}
             </ul>
           )}
+          {waitingAll > waiting.length && <p className="st-dsub">Menampilkan {waiting.length} terbaru dari {waitingAll}.</p>}
           {held.length > 0 && <p className="st-dsub">{held.length} file ditahan karena perlu ditinjau, tidak dihitung ke omzet.</p>}
           {pmsg && <p className="st-msg" aria-live="polite">{pmsg}</p>}
 

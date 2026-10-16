@@ -151,7 +151,7 @@ export default function Stage() {
 
   const { flow, trend, categories, channels } = data
   const batches = data.batches || []
-  const waiting = batches.filter((b) => b.trust === 'VALIDATING').length
+  const waiting = flow.trust.VALIDATING || 0
   const insights = data.insights || []
   const agent = data.agent || { status: 'idle', step: null, label: '', lastDone: false }
   // Tanpa data agen dari backend, garis waktu diisi dari aktivitas (feed) supaya tetap hidup.
@@ -197,7 +197,7 @@ export default function Stage() {
             <h1>{STAGE_NAME}</h1>
             <nav className="st-tabs" role="tablist" aria-label="Halaman Panggung">
               <button type="button" role="tab" aria-selected={page === 'gudang'} className={page === 'gudang' ? 'on' : ''} onClick={() => go('gudang')}>
-                <Database size={17} strokeWidth={1.9} />Gudang Data{hasPages && <em>{batches.length}</em>}
+                <Database size={17} strokeWidth={1.9} />Gudang Data{hasPages && <em>{flow.batch.count}</em>}
               </button>
               <button type="button" role="tab" aria-selected={page === 'bersih'} className={page === 'bersih' ? 'on' : ''} onClick={() => go('bersih')}>
                 <Sparkles size={17} strokeWidth={1.9} />Data Bersih &amp; Insight{insights.length > 0 && <em>{insights.length}</em>}
@@ -270,7 +270,7 @@ export default function Stage() {
         </p>
       </div>
 
-      <StageIntake open={intake} onClose={() => setIntake(false)} batches={batches} apiInfo={data.api} actions={actions} caps={caps} siaran={siaran} now={now} />
+      <StageIntake open={intake} onClose={() => setIntake(false)} batches={batches} waitingTotal={waiting} apiInfo={data.api} actions={actions} caps={caps} siaran={siaran} now={now} />
       {canControl && (
         <StageControls
           open={open} onOpen={() => setOpen(true)} onClose={() => setOpen(false)}

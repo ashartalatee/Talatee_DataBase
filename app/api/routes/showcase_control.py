@@ -236,13 +236,15 @@ async def upload(
     if len(data) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="File terlalu besar (maksimal 5 MB).")
     source = (source_name or "").strip()[:60] or UPLOAD_SOURCE
+    digest = _content_digest(data)
+    _reject_duplicate(db, digest)
 
     business = _demo_business(db)
     _guard_capacity(db, business)
     result = await _ingest_and_trust(
         db, business,
         source_name=source,
-        dataset_name=f"Upload {filename[:70]} {datetime.now():%H%M%S}",
+        dataset_name=f"Upload #{digest} {filename[:60]}",
         filename=filename,
         data=data,
         promote=promote,
@@ -304,3 +306,32 @@ async def reset_demo(
         ok=True,
         message=f"Data demo dikosongkan: {counts.datasets} dataset, {counts.batches} batch, {counts.transactions} transaksi",
     )
+
+
+def _content_digest(data: bytes) -> str:
+    """Sidik singkat isi file (sama isi = sama sidik), dipakai di nama dataset unggahan."""
+    import hashlib
+
+    return hashlib.sha256(data).hexdigest()[:10]
+
+
+def _reject_duplicate(db: Session, digest: str) -> None:
+    """Tolak file yang isinya sama dengan yang sudah ada di data demo, supaya omzet tidak terhitung dobel.
+    Bila kolom nama dataset tidak bisa dipakai, pemeriksaan dilewati (unggahan tetap jalan)."""
+    name_col = getattr(Dataset, "name", None)
+    if name_col is None:
+        return
+    business = _demo_business(db)
+    found = (
+        db.query(Dataset.id)
+        .join(Source, Dataset.source_id == Source.id)
+        .filter(
+            Source.business_id == business.id,
+            Source.deleted_at.is_(None),
+            Dataset.deleted_at.is_(None),
+            name_col.like(f"Upload #{digest} %"),
+        )
+        .first()
+    )
+    if found is not None:
+        raise HTTPException(status_code=409, detail="File dengan isi yang sama sudah ada di data demo.")
