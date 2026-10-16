@@ -211,7 +211,7 @@ export default function Stage() {
               </button>
             )}
             {follow && <span className="st-tag follow"><i className="st-dot" />Agen memandu</span>}
-            <span className={`st-tag ${error ? 'bad' : 'live'}`}><i className="st-dot" />{error ? 'Terputus' : 'Live'}</span>
+            <span className={`st-tag ${error ? 'bad' : mode === 'mock' ? '' : 'live'}`}>{(error || mode !== 'mock') && <i className="st-dot" />}{error ? 'Terputus' : mode === 'mock' ? 'Demo' : 'Live'}</span>
             <span className="st-tag">Data demo</span>
             {mode === 'mock' && <span className="st-tag">{paused ? 'Simulasi lokal' : 'Simulasi lokal, otomatis'}</span>}
           </div>

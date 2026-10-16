@@ -336,7 +336,7 @@ export function useStageData() {
   }
   const actions = { trigger: call('trigger'), backfill: call('backfill'), upload: call('upload'), reset: call('reset'), promote: call('promote'), resetPreview }
   const caps = mock
-    ? { trigger: true, backfill: true, upload: true, reset: true, resetPreview: true, auto: true, promote: false }
+    ? { trigger: true, backfill: true, upload: false, reset: true, resetPreview: true, auto: true, promote: false }
     : { trigger: !!api.stageTrigger, backfill: !!api.stageBackfill, upload: !!api.stageUpload, reset: !!api.stageReset, resetPreview: !!api.stageResetPreview, auto: false, promote: !!api.stagePromote }
 
   return { data, error, mode: MODE, paused, togglePause, actions, caps }

@@ -3,7 +3,7 @@
 > Dokumen hidup. Bagian bertanda **[TETAP]** tidak diubah tanpa catatan keputusan tertulis (lihat Bagian 10).
 > Bagian lain boleh berkembang. Setiap perubahan dicatat di Bagian 12.
 >
-> **Versi 1.2 · 15 Oktober 2026 · Pemilik: Ashar (Talatee)**
+> **Versi 1.3 · 15 Oktober 2026 · Pemilik: Ashar (Talatee)**
 
 ---
 
@@ -133,6 +133,7 @@ api:      { configured, key_prefix, last_used }
 4. Pesan galat di layar hanya pesan 4xx yang sudah dikurasi backend. Detail teknis hanya di konsol.
 5. Tab Panggung yang tersembunyi tidak ikut memanggil backend. Tutup tab Panggung yang tidak dipakai (tiap tab memanggil backend tiap 3 detik).
 6. Judul tab dan ikon diganti selama Panggung terbuka. `index.html` masih bertuliskan "Talatee" sampai React jalan, jadi buka halaman ini **sebelum** mulai berbagi layar.
+7. Situs publik (Vercel) hanya menjalankan mode simulasi. Tag di pojok kanan atas bertuliskan **Demo** (bukan Live), unggah file dinonaktifkan karena simulasi tidak membaca isi file, dan `VITE_STAGE_MODE=api` tidak boleh diisi di pengaturan Vercel.
 
 ---
 
@@ -265,6 +266,7 @@ Format: **ID · tanggal · keputusan · alasan · konsekuensi.** Keputusan baru 
 - **D-007 · 15 Okt 2026 · Kunci API tampil sekali, tanpa tombol "tampilkan".** Alasan: kunci disimpan sebagai hash. Konsekuensi: lupa berarti buat baru.
 - **D-008 · 15 Okt 2026 · "Sambungkan API" berarti menerima data dahulu.** Menarik data dari marketplace ditunda ke Fase 4.
 - **D-009 · 15 Okt 2026 · File dengan isi sama ditolak lewat sidik isi (SHA-256, 10 karakter pertama) di nama dataset.** Alasan: 27 unggahan ganda ditemukan saat uji, dan omzet akan terhitung dobel. Konsekuensi: pemeriksaan dilewati bila model dataset tidak punya kolom `name` (unggahan tetap jalan), dan dijaga oleh `test_upload_same_content_twice_is_rejected`.
+- **D-010 · 15 Okt 2026 · Situs publik = simulasi berlabel.** Alasan: Vercel tidak bisa menjangkau backend lokal, dan data nyata tidak boleh terbuka untuk umum. Konsekuensi: tag "Demo", tag "Simulasi lokal", dan "Data demo" tetap tampil (P4); mode `api` hanya dijalankan dari komputer sendiri; tautan yang dibagikan memakai `?otomatis` supaya simulasi langsung berjalan.
 
 ---
 
@@ -299,6 +301,7 @@ Format: **ID · tanggal · keputusan · alasan · konsekuensi.** Keputusan baru 
 | 1.0 | 15 Okt 2026 | Piagam pertama: prinsip, kontrak, status, peta jalan, keputusan D-001 sampai D-008. |
 | 1.1 | 15 Okt 2026 | Label "Siap diverifikasi" dan perbaikan kolom jam (`issue_checks.py`) selesai; Bagian 4, 8, dan 9 diperbarui. |
 | 1.2 | 15 Okt 2026 | Penolak file ganda (D-009), lencana total, `make_demo_csv.py`; D-003 dimitigasi. |
+| 1.3 | 15 Okt 2026 | Simulasi publik: tag "Demo", unggah dinonaktifkan di simulasi (D-010), aturan situs publik di Bagian 5. |
 
 ---
 
