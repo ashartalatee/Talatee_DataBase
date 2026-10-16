@@ -119,3 +119,30 @@ def test_upload_without_promote_stays_validating(demo_business, storage_up):
     r = client.post("/showcase/demo/upload", files={"file": ("tes.csv", data)}, data={"promote": "false"})
     assert r.status_code == 200, r.text
     assert r.json()["results"][0]["trust_status"] == "VALIDATING"
+
+
+def test_content_digest_depends_only_on_content():
+    assert sc._content_digest(b"a,b\n1,2") == sc._content_digest(b"a,b\n1,2")
+    assert sc._content_digest(b"a,b\n1,2") != sc._content_digest(b"a,b\n1,3")
+
+
+def test_upload_same_content_twice_is_rejected(demo_business, storage_up, monkeypatch):
+    monkeypatch.setattr(sc, "STEP_DELAY_S", 0)
+    data, _, _ = demo_data.make_batch_csv(random.Random(11), 6)
+    other, _, _ = demo_data.make_batch_csv(random.Random(12), 6)
+
+    def send(name, content):
+        return client.post("/showcase/demo/upload", files={"file": (name, content, "text/csv")}, data={"promote": "false"})
+
+    assert send("pertama.csv", data).status_code == 200
+    again = send("nama-lain.csv", data)  # isi sama, nama beda: tetap ditolak
+    assert again.status_code == 409
+    assert "isi yang sama" in again.json()["detail"]
+    assert send("berbeda.csv", other).status_code == 200  # isi beda: lolos
+
+    db = SessionLocal()
+    try:
+        n = db.query(Dataset).join(Source, Dataset.source_id == Source.id).filter(Source.business_id == demo_business).count()
+    finally:
+        db.close()
+    assert n == 2  # file yang ditolak tidak membuat dataset

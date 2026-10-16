@@ -3,7 +3,7 @@
 > Dokumen hidup. Bagian bertanda **[TETAP]** tidak diubah tanpa catatan keputusan tertulis (lihat Bagian 10).
 > Bagian lain boleh berkembang. Setiap perubahan dicatat di Bagian 12.
 >
-> **Versi 1.1 · 15 Oktober 2026 · Pemilik: Ashar (Talatee)**
+> **Versi 1.2 · 15 Oktober 2026 · Pemilik: Ashar (Talatee)**
 
 ---
 
@@ -60,6 +60,7 @@ Panggung (`/stage`) adalah layar tontonan untuk konten dan siaran langsung. Laya
 | `app/services/stage_batches.py` | Memetakan status batch ke status tampilan (fungsi murni) |
 | `app/api/routes/showcase_control.py` | `/showcase/*`: simulator, unggah demo, isi 30 hari, reset (hanya demo) |
 | `scripts/seed_demo.py` | Membuat bisnis "Skincare Demo" dan kunci API-nya |
+| `scripts/make_demo_csv.py` | Membuat CSV demo (generator yang sama dengan Simulator) untuk diseret ke Panggung saat live |
 
 **Frontend** (`dashboard/src/pages/`)
 
@@ -120,7 +121,7 @@ api:      { configured, key_prefix, last_used }
 | `NEEDS_REVIEW` atau batch `failed` | Perlu ditinjau | Tidak dihitung ke omzet |
 | `TRUSTED` | Terpercaya | Satu-satunya yang dihitung ke omzet |
 
-**Aturan unggahan Panggung:** satu file = satu dataset (`Upload <nama file> <jam>`). Persetujuan berlaku per file. Konsekuensinya: dua file berisi order yang sama terhitung dua kali (lihat Keputusan D-003).
+**Aturan unggahan Panggung:** satu file = satu dataset (`Upload #<sidik isi> <nama file>`). Persetujuan berlaku per file. File dengan isi yang sama dengan yang sudah ada di data demo ditolak (409), apa pun namanya (lihat D-003 dan D-009).
 
 ---
 
@@ -191,6 +192,7 @@ Segala hal yang menyentuh P1 sampai P10, kontrak di Bagian 3, aturan kepercayaan
 - Endpoint detail dan promote khusus bisnis demo.
 - Bisnis demo "Skincare Demo" dan kunci API terikat sudah ada di database.
 - Pemeriksa kualitas baris menerima kolom jam dan tanggal-jam gabungan; versi bersih tidak lagi mengarantina semua baris pada file seperti itu.
+- Penolak file ganda (berdasarkan sidik isi), lencana jumlah memakai total sebenarnya, dan `scripts/make_demo_csv.py` untuk bahan unggahan live.
 - Reset demo ikut membersihkan entri Laboratorium milik bisnis demo.
 - Tes: 9 lulus (tes baru ikut terhitung). Lint: 0 galat.
 
@@ -200,7 +202,6 @@ Segala hal yang menyentuh P1 sampai P10, kontrak di Bagian 3, aturan kepercayaan
 - Pembuatan kunci API dari layar, dan alamat endpoint terima data.
 - Stok, marketing, dan katalog.
 - Pengambilan data otomatis dari marketplace atau Google Sheets.
-- Pelindung duplikat antar file.
 
 ### Masalah yang diketahui
 1. ~~Label "Bersih" untuk file yang belum disetujui.~~ **Selesai (v1.1):** status `VALIDATING` lama kini tampil "Siap diverifikasi".
@@ -240,7 +241,7 @@ Setiap fase punya gerbang. Fase berikutnya baru dimulai bila gerbangnya terpenuh
 - **Gerbang:** tiap domain punya tes, tabel, dan pemeriksa kualitas sebelum tampil.
 
 ### Fase 4: Koneksi
-- Tombol "Buat kunci baru" (kunci tampil sekali), dan dokumentasi endpoint terima data.
+- Tombol "Buat kunci baru" (kunci tampil sekali), dan dokumentasi endpoint terima data. Endpoint yang sudah ada: `POST /ingest/upload` dengan header `Authorization: Bearer <kunci>`.
 - Setelah itu, pengambilan data otomatis. Mulai dari yang paling sederhana (Google Sheets), baru marketplace.
 - **Gerbang:** satu sistem luar (misalnya n8n) berhasil mengirim data dan terlihat di Panggung.
 
@@ -257,12 +258,13 @@ Format: **ID · tanggal · keputusan · alasan · konsekuensi.** Keputusan baru 
 
 - **D-001 · 15 Okt 2026 · Panggung hanya membaca bisnis demo.** Alasan: layar disiarkan. Konsekuensi: endpoint baru wajib memeriksa `is_demo`.
 - **D-002 · 15 Okt 2026 · Unggahan manual bawaannya menunggu persetujuan.** Alasan: momen cerita dan penjaga mutu. Konsekuensi: ada kotak centang sadar untuk melewatinya.
-- **D-003 · 15 Okt 2026 · Satu unggahan = satu dataset (pilihan A).** Alasan: persetujuan per file. Konsekuensi: file yang sama diunggah dua kali terhitung dua kali, perlu pelindung duplikat (Fase 0 atau 1). Bisa dikembalikan dengan satu baris di `showcase_control.py`.
+- **D-003 · 15 Okt 2026 · Satu unggahan = satu dataset (pilihan A).** Alasan: persetujuan per file. Konsekuensi: pelindung duplikat diperlukan, dan sudah ada sejak v1.2 (D-009). Bisa dikembalikan dengan mengubah `dataset_name` di `showcase_control.py`.
 - **D-004 · 15 Okt 2026 · "Tambah data" berupa laci mengambang.** Alasan: tidak mengubah tata letak halaman yang sudah disukai.
 - **D-005 · 15 Okt 2026 · Batas skor kualitas 70 tetap di inti (`core.py`), bukan di Panggung.** Alasan: aturan teruji dan dipakai di luar Panggung.
 - **D-006 · 15 Okt 2026 · Gerak dipicu data nyata, bukan timer.** Lihat P5.
 - **D-007 · 15 Okt 2026 · Kunci API tampil sekali, tanpa tombol "tampilkan".** Alasan: kunci disimpan sebagai hash. Konsekuensi: lupa berarti buat baru.
 - **D-008 · 15 Okt 2026 · "Sambungkan API" berarti menerima data dahulu.** Menarik data dari marketplace ditunda ke Fase 4.
+- **D-009 · 15 Okt 2026 · File dengan isi sama ditolak lewat sidik isi (SHA-256, 10 karakter pertama) di nama dataset.** Alasan: 27 unggahan ganda ditemukan saat uji, dan omzet akan terhitung dobel. Konsekuensi: pemeriksaan dilewati bila model dataset tidak punya kolom `name` (unggahan tetap jalan), dan dijaga oleh `test_upload_same_content_twice_is_rejected`.
 
 ---
 
@@ -296,6 +298,7 @@ Format: **ID · tanggal · keputusan · alasan · konsekuensi.** Keputusan baru 
 |---|---|---|
 | 1.0 | 15 Okt 2026 | Piagam pertama: prinsip, kontrak, status, peta jalan, keputusan D-001 sampai D-008. |
 | 1.1 | 15 Okt 2026 | Label "Siap diverifikasi" dan perbaikan kolom jam (`issue_checks.py`) selesai; Bagian 4, 8, dan 9 diperbarui. |
+| 1.2 | 15 Okt 2026 | Penolak file ganda (D-009), lencana total, `make_demo_csv.py`; D-003 dimitigasi. |
 
 ---
 
