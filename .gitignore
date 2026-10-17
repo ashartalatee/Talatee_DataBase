@@ -16,3 +16,6 @@ talatee-backup-*/
 .env*
 
 kompas_refresh.log
+
+backups/
+journal_dispatch.log

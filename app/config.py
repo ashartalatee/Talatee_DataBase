@@ -27,7 +27,12 @@ class Settings(BaseSettings):
     # 9119 yang dipakai buat browser). Diisi lewat .env setelah API server
     # Hermes diaktifkan (lihat app/api/routes/chat.py).
     hermes_api_url: str = "http://127.0.0.1:8642"
+    waha_url: str = ""
+    waha_api_key: str = ""
     hermes_api_key: str = ""
+    groq_api_key: str = ""
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
 
 
 # Instance singleton, di-import di tempat lain: `from app.config import settings`

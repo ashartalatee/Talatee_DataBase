@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -58,8 +58,16 @@ def _to_out(entry: LabEntry, db: Session) -> LabEntryOut:
 
 
 @router.get("", response_model=list[LabEntryOut])
-def list_lab_entries(db: Session = Depends(get_db)):
-    entries = db.query(LabEntry).order_by(LabEntry.created_at.desc()).all()
+def list_lab_entries(
+    include_demo: bool = Query(False),
+    db: Session = Depends(get_db),
+):
+    query = db.query(LabEntry)
+    if not include_demo:
+        query = query.outerjoin(Business, LabEntry.business_id == Business.id).filter(
+            (LabEntry.business_id.is_(None)) | (Business.is_demo.is_(False))
+        )
+    entries = query.order_by(LabEntry.created_at.desc()).all()
     return [_to_out(e, db) for e in entries]
 
 

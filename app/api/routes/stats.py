@@ -22,7 +22,7 @@ _NOT_TRASHED = (
 
 
 @router.get("/overview", response_model=OverviewStatsOut)
-def get_overview_stats(db: Session = Depends(get_db)):
+def get_overview_stats(include_demo: bool = False, db: Session = Depends(get_db)):
     """
     Agregasi ringkas untuk halaman Overview dashboard. Semua angka dihitung
     dari metadata DB (Prinsip Inti #4: API selalu baca dari Postgres, tidak
@@ -30,23 +30,18 @@ def get_overview_stats(db: Session = Depends(get_db)):
     sesaat, di level mana pun -- business/source/dataset/batch) TIDAK ikut
     dihitung di angka mana pun di sini.
     """
-    total_sources = (
+    sources_q = (
         db.query(func.count(Source.id))
         .join(Business, Source.business_id == Business.id)
         .filter(Source.deleted_at.is_(None), Business.deleted_at.is_(None))
-        .scalar()
-        or 0
     )
-    total_datasets = (
+    datasets_q = (
         db.query(func.count(Dataset.id))
         .join(Source, Dataset.source_id == Source.id)
         .join(Business, Source.business_id == Business.id)
         .filter(Dataset.deleted_at.is_(None), Source.deleted_at.is_(None), Business.deleted_at.is_(None))
-        .scalar()
-        or 0
     )
-
-    trusted_datasets = (
+    trusted_q = (
         db.query(func.count(Dataset.id))
         .join(Source, Dataset.source_id == Source.id)
         .join(Business, Source.business_id == Business.id)
@@ -56,8 +51,6 @@ def get_overview_stats(db: Session = Depends(get_db)):
             Business.deleted_at.is_(None),
             Dataset.trust_status == "TRUSTED",
         )
-        .scalar()
-        or 0
     )
     batch_chain = (
         db.query(Batch)
@@ -66,54 +59,31 @@ def get_overview_stats(db: Session = Depends(get_db)):
         .join(Business, Source.business_id == Business.id)
         .filter(*_NOT_TRASHED)
     )
-    total_batches = batch_chain.with_entities(func.count(Batch.id)).scalar() or 0
-    total_records = (
-        batch_chain.with_entities(func.coalesce(func.sum(Batch.records_saved), 0)).scalar() or 0
-    )
-
-    total_storage_bytes = (
+    storage_q = (
         db.query(func.coalesce(func.sum(FileModel.file_size), 0))
         .join(Batch, FileModel.batch_id == Batch.id)
         .join(Dataset, Batch.dataset_id == Dataset.id)
         .join(Source, Dataset.source_id == Source.id)
         .join(Business, Source.business_id == Business.id)
         .filter(*_NOT_TRASHED)
-        .scalar()
-        or 0
     )
-
-    # Omzet (Rupiah) TOTAL keseluruhan -- cuma baris is_revenue=True yang
-    # dihitung (lihat REVENUE_STATUSES di app/models/core_transaction.py).
-    # Ini beda dari total_records: total_records = jumlah baris file yang
-    # tersimpan, total_revenue = nilai transaksi yang benar-benar dianggap
-    # closing/berhasil.
-    total_revenue = (
+    revenue_q = (
         db.query(func.coalesce(func.sum(CoreTransaction.subtotal), 0))
         .join(Batch, CoreTransaction.batch_id == Batch.id)
         .join(Dataset, Batch.dataset_id == Dataset.id)
         .join(Source, Dataset.source_id == Source.id)
         .join(Business, Source.business_id == Business.id)
         .filter(CoreTransaction.is_revenue.is_(True), Dataset.trust_status == "TRUSTED", *_NOT_TRASHED)
-        .scalar()
     )
-    total_revenue = float(total_revenue or 0)
-
-    # Omzet per Source (channel) -- query TERPISAH dari breakdown_rows di
-    # bawah (bukan digabung satu query) supaya join ke CoreTransaction tidak
-    # bikin fan-out yang merusak SUM(Batch.records_saved).
-    revenue_by_source_rows = (
+    rev_by_source_q = (
         db.query(Source.id, func.coalesce(func.sum(CoreTransaction.subtotal), 0))
+        .join(Business, Source.business_id == Business.id)
         .join(Dataset, (Dataset.source_id == Source.id) & (Dataset.deleted_at.is_(None)) & (Dataset.trust_status == "TRUSTED"))
         .join(Batch, (Batch.dataset_id == Dataset.id) & (Batch.deleted_at.is_(None)))
         .join(CoreTransaction, (CoreTransaction.batch_id == Batch.id) & (CoreTransaction.is_revenue.is_(True)))
-        .filter(Source.deleted_at.is_(None))
-        .group_by(Source.id)
-        .all()
+        .filter(Source.deleted_at.is_(None), Business.deleted_at.is_(None))
     )
-    revenue_by_source = {str(sid): float(rev) for sid, rev in revenue_by_source_rows}
-
-    # Breakdown records per source (untuk pie chart)
-    breakdown_rows = (
+    breakdown_q = (
         db.query(
             Source.id,
             Source.name,
@@ -129,9 +99,38 @@ def get_overview_stats(db: Session = Depends(get_db)):
             Batch,
             (Batch.dataset_id == Dataset.id) & (Batch.deleted_at.is_(None)),
         )
-        .group_by(Source.id, Source.name)
-        .all()
     )
+    recent_q = (
+        db.query(Batch, Dataset.name, Source.name, FileModel.filename)
+        .join(Dataset, Batch.dataset_id == Dataset.id)
+        .join(Source, Dataset.source_id == Source.id)
+        .join(Business, Source.business_id == Business.id)
+        .outerjoin(FileModel, FileModel.batch_id == Batch.id)
+        .filter(*_NOT_TRASHED)
+    )
+
+    if not include_demo:
+        sources_q = sources_q.filter(Business.is_demo.is_(False))
+        datasets_q = datasets_q.filter(Business.is_demo.is_(False))
+        trusted_q = trusted_q.filter(Business.is_demo.is_(False))
+        batch_chain = batch_chain.filter(Business.is_demo.is_(False))
+        storage_q = storage_q.filter(Business.is_demo.is_(False))
+        revenue_q = revenue_q.filter(Business.is_demo.is_(False))
+        rev_by_source_q = rev_by_source_q.filter(Business.is_demo.is_(False))
+        breakdown_q = breakdown_q.filter(Business.is_demo.is_(False))
+        recent_q = recent_q.filter(Business.is_demo.is_(False))
+
+    total_sources = sources_q.scalar() or 0
+    total_datasets = datasets_q.scalar() or 0
+    trusted_datasets = trusted_q.scalar() or 0
+    total_batches = batch_chain.with_entities(func.count(Batch.id)).scalar() or 0
+    total_records = batch_chain.with_entities(func.coalesce(func.sum(Batch.records_saved), 0)).scalar() or 0
+    total_storage_bytes = storage_q.scalar() or 0
+    total_revenue = float(revenue_q.scalar() or 0)
+    revenue_by_source_rows = rev_by_source_q.group_by(Source.id).all()
+    revenue_by_source = {str(sid): float(rev) for sid, rev in revenue_by_source_rows}
+    breakdown_rows = breakdown_q.group_by(Source.id, Source.name).all()
+
     data_by_source = [
         SourceBreakdownItem(
             source_id=str(sid),
@@ -143,18 +142,7 @@ def get_overview_stats(db: Session = Depends(get_db)):
         if total > 0
     ]
 
-    # 10 batch terbaru (untuk "Recently Added Data")
-    recent_rows = (
-        db.query(Batch, Dataset.name, Source.name, FileModel.filename)
-        .join(Dataset, Batch.dataset_id == Dataset.id)
-        .join(Source, Dataset.source_id == Source.id)
-        .join(Business, Source.business_id == Business.id)
-        .outerjoin(FileModel, FileModel.batch_id == Batch.id)
-        .filter(*_NOT_TRASHED)
-        .order_by(Batch.started_at.desc())
-        .limit(10)
-        .all()
-    )
+    recent_rows = recent_q.order_by(Batch.started_at.desc()).limit(10).all()
     recent_batches = [
         RecentBatchItem(
             id=str(batch.id),

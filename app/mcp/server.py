@@ -267,6 +267,7 @@ def list_businesses() -> list[dict]:
                 "business": b.name,
                 "category": b.category,
                 "status": b.status,
+                "is_demo": bool(b.is_demo),
                 "dataset_belum_trusted": _count_untrusted_datasets(db, b.id),
             }
             for b in rows

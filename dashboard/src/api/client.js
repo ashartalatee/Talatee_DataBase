@@ -1,4 +1,4 @@
-﻿// BASE_URL fleksibel supaya dashboard tetap bisa manggil backend walau
+// BASE_URL fleksibel supaya dashboard tetap bisa manggil backend walau
 // diakses lewat VS Code port forwarding (devtunnels), bukan cuma localhost:
 //
 // 1. Kalau ada env var VITE_API_BASE_URL (isi di dashboard/.env), itu yang
@@ -85,15 +85,41 @@ export const api = {
   getOverview: () => request('/stats/overview'),
 
   listBusinessCategories: () => request('/businesses/categories'),
-  listBusinesses: () => request('/businesses'),
+  listBusinesses: (trust, includeDemo) => {
+    const q = new URLSearchParams()
+    if (trust) q.set('trust', trust)
+    if (includeDemo) q.set('include_demo', 'true')
+    const s = q.toString()
+    return request(s ? `/businesses?${s}` : '/businesses')
+  },
   getBusiness: (id) => request(`/businesses/${id}`),
   getBusinessSources: (id) => request(`/businesses/${id}/sources`),
 
   listSources: (businessId) =>
     request(businessId ? `/sources?business_id=${businessId}` : '/sources'),
   getSource: (id) => request(`/sources/${id}`),
-
-  listDatasets: () => request('/datasets'),
+  listSourcesTrusted: () => request('/sources?trust=trusted'),
+  getShowcaseHealth: () => request('/showcase/health'),
+  getStageSummary: () => request('/stage/summary'),
+  // Kendali demo Panggung (laci Kendali di /stage). Semua hanya menyentuh bisnis demo di backend.
+  stageTrigger: () => request('/showcase/simulator/trigger', { method: 'POST' }),
+  stageBackfill: () => request('/showcase/demo/backfill', { method: 'POST' }),
+  stageUpload: (file, { promote = true } = {}) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('promote', String(promote))
+    return request('/showcase/demo/upload', { method: 'POST', body: formData })
+  },
+  stageResetPreview: () => request('/showcase/reset/preview'),
+  getStageBatch: (id) => request(`/stage/batches/${id}`),
+  stagePromote: (id) => request(`/stage/batches/${id}/promote`, { method: 'POST' }),
+  stageReset: () =>
+    request('/showcase/reset', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: true }),
+    }),
+  listDatasets: (trust) => request(trust ? `/datasets?trust=${trust}` : '/datasets'),
   getDataset: (id) => request(`/datasets/${id}`),
   listBatches: (datasetId) =>
     request(datasetId ? `/batches?dataset_id=${datasetId}` : '/batches'),
@@ -264,6 +290,19 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   deleteKompasReading: (id) => request(`/kompas/reading/${id}`, { method: 'DELETE' }),
+  listKompasJournals: () => request('/kompas/journals'),
+  transcribeKompasJournal: (blob) => {
+    const fd = new FormData()
+    fd.append('file', blob, 'rekaman')
+    return request('/kompas/journals/transcribe', { method: 'POST', body: fd })
+  },
+  createKompasJournal: (payload) =>
+    request('/kompas/journals', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+  deleteKompasJournal: (id) => request(`/kompas/journals/${id}`, { method: 'DELETE' }),
 
   listProjects: () => request('/projects'),
   createProject: (payload) =>

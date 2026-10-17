@@ -5,7 +5,7 @@ import { LoadingState, ErrorState, EmptyState } from '../components/States'
 import { formatDateTime } from '../lib/format'
 
 export default function Sources() {
-  const sources = useFetch(() => api.listSources(), [])
+  const sources = useFetch(() => api.listSourcesTrusted(), [])
   const businesses = useFetch(() => api.listBusinesses(), [])
 
   if (sources.loading || businesses.loading) return <LoadingState label="Memuat sources" />
@@ -24,7 +24,7 @@ export default function Sources() {
       </div>
 
       {sources.data.length === 0 ? (
-        <EmptyState label="Belum ada source. Upload data lewat halaman Upload untuk membuat source pertama." />
+        <EmptyState label="Belum ada source terpercaya. Data baru masuk ke Eksperimen dulu; jadikan dataset-nya TRUSTED agar source muncul di sini." />
       ) : (
         <div className="bg-ink-surface border border-ink-border rounded-lg overflow-hidden">
           <table className="w-full text-sm">

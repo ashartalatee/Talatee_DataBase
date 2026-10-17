@@ -28,7 +28,11 @@ const CATEGORY_META = {
 }
 
 export default function Businesses() {
-  const { data, loading, error, reload } = useFetch(() => api.listBusinesses(), [])
+  const [showDemo, setShowDemo] = useState(false)
+  const { data, loading, error, reload } = useFetch(
+    () => api.listBusinesses('trusted', showDemo),
+    [showDemo],
+  )
   const [busyId, setBusyId] = useState(null)
   const [actionError, setActionError] = useState(null)
 
@@ -75,6 +79,15 @@ export default function Businesses() {
         </p>
       </div>
 
+      <label className="inline-flex items-center gap-2 text-xs text-text-muted cursor-pointer">
+        <input
+          type="checkbox"
+          checked={showDemo}
+          onChange={(e) => setShowDemo(e.target.checked)}
+        />
+        Tampilkan bisnis demo
+      </label>
+
       {actionError && (
         <div className="text-danger text-xs bg-danger/10 border border-danger/30 rounded px-3 py-2">
           {actionError}
@@ -82,7 +95,7 @@ export default function Businesses() {
       )}
 
       {data.length === 0 ? (
-        <EmptyState label="Belum ada business. Upload data untuk membuat business pertama." />
+        <EmptyState label="Belum ada client terpercaya. Data baru masuk ke Eksperimen dulu; jadikan dataset-nya TRUSTED agar client muncul di sini." />
       ) : (
         categoryOrder
           .filter((cat) => grouped[cat]?.length)
@@ -112,6 +125,11 @@ export default function Businesses() {
                       </button>
                       <div className="text-text-primary text-sm font-medium truncate pr-5">
                         {b.name}
+                        {b.is_demo && (
+                          <span className="ml-2 align-middle text-[10px] font-display px-1.5 py-0.5 rounded border border-accent/50 text-accent">
+                            Demo
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-4 mt-4 pt-3 border-t border-ink-border text-xs">
                         <div>
