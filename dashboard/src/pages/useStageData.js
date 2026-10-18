@@ -1,7 +1,10 @@
 // Sumber data Panggung.
 //  - VITE_STAGE_MODE=mock (default): data demo dibangkitkan di browser, untuk menyiapkan tampilan & rekaman.
 //  - VITE_STAGE_MODE=api : membaca GET /stage/summary lewat api.getStageSummary().
-//  - ?mock di URL memaksa mode mock tanpa mengubah .env.
+//  - VITE_STAGE_MODE=auto: saat halaman dibuka, cek sesi login (GET /auth/me). Sudah login -> mode api
+//    (unggah, persetujuan, status API aktif). Belum login atau backend tidak terjangkau -> mode mock
+//    berlabel Demo. Ini yang dipakai di situs publik (Vercel), lihat D-011 di docs/PANGGUNG.md.
+//  - ?mock di URL memaksa mode mock tanpa mengubah .env, apa pun isi VITE_STAGE_MODE.
 //
 // Kontrak data (bentuk yang sama dipakai mock dan API):
 // {
@@ -35,7 +38,9 @@ import { api } from '../api/client'
 
 const flag = (name) => new URLSearchParams(window.location.search).has(name)
 // ?mock memaksa data simulasi (untuk menyiapkan tampilan tanpa backend), apa pun isi VITE_STAGE_MODE.
-const MODE = flag('mock') ? 'mock' : (import.meta.env.VITE_STAGE_MODE || 'mock')
+const ENV_MODE = import.meta.env.VITE_STAGE_MODE || 'mock'
+// null = belum diputuskan: mode "auto" menunggu hasil cek login dulu (lihat useStageData).
+const INITIAL_MODE = flag('mock') ? 'mock' : (ENV_MODE === 'auto' ? null : ENV_MODE)
 
 const CATS = [['Skincare', 0.32], ['Makeup', 0.22], ['Perawatan Rambut', 0.16], ['Body Care', 0.13], ['Lainnya', 0.17]]
 const CHAN = [['TikTok Shop', 0.36], ['Shopee', 0.3], ['Lazada', 0.17], ['WhatsApp', 0.1], ['Website', 0.07]]
@@ -277,9 +282,20 @@ export function useStageData() {
   const pullRef = useRef(null)
   // Mock mulai dalam keadaan diam (Otomatis mati) kecuali dibuka dengan ?otomatis.
   const [paused, setPaused] = useState(() => !flag('otomatis'))
-  const mock = MODE === 'mock'
+  const [mode, setMode] = useState(INITIAL_MODE)
+  const mock = mode === 'mock'
+
+  // Mode auto: sudah login -> api, selain itu (belum login, sesi habis, backend mati) -> simulasi berlabel Demo.
+  // /auth/me tidak memicu pengalihan ke /login (dikecualikan di client.js), jadi penonton publik tetap di Panggung.
+  useEffect(() => {
+    if (mode !== null) return undefined
+    let alive = true
+    api.me().then(() => alive && setMode('api')).catch(() => alive && setMode('mock'))
+    return () => { alive = false }
+  }, [mode])
 
   useEffect(() => {
+    if (mode === null) return undefined
     if (mock) {
       const m = createMock(setData, { paused: !flag('otomatis') })
       ctl.current = m
@@ -304,7 +320,7 @@ export function useStageData() {
     const onVisible = () => { if (!document.hidden) pull() }
     document.addEventListener('visibilitychange', onVisible)
     return () => { alive = false; clearInterval(id); document.removeEventListener('visibilitychange', onVisible) }
-  }, [mock])
+  }, [mode]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const togglePause = () => {
     const m = ctl.current
@@ -335,9 +351,11 @@ export function useStageData() {
     return `Akan dihapus: ${p.datasets} dataset, ${p.batches} batch, ${p.files} file, ${p.transactions} transaksi.`
   }
   const actions = { trigger: call('trigger'), backfill: call('backfill'), upload: call('upload'), reset: call('reset'), promote: call('promote'), resetPreview }
-  const caps = mock
+  const caps = mode === null
+    ? { trigger: false, backfill: false, upload: false, reset: false, resetPreview: false, auto: false, promote: false }
+    : mock
     ? { trigger: true, backfill: true, upload: false, reset: true, resetPreview: true, auto: true, promote: false }
     : { trigger: !!api.stageTrigger, backfill: !!api.stageBackfill, upload: !!api.stageUpload, reset: !!api.stageReset, resetPreview: !!api.stageResetPreview, auto: false, promote: !!api.stagePromote }
 
-  return { data, error, mode: MODE, paused, togglePause, actions, caps }
+  return { data, error, mode, paused, togglePause, actions, caps }
 }
